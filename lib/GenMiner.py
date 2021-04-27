@@ -383,26 +383,36 @@ def jsontransform(json_in, out):
 		for reference in record["GBSeq_references"]["GBReference"]:
 			if type(reference) == type({"dict":"dict"}):
 				try:
-					if reference["GBReference_title"] == "Direct Submission" and state <= 1:
-						state = 1
-						title.append("Direct Submission")
+					if "GBReference_title" in reference:
+						if reference["GBReference_title"] == "Direct Submission" and state <= 1:
+							state = 1 # only unpublished file exists
+							title.append("Direct Submission")
 
-					elif reference["GBReference_title"] == "Direct Submission" and state >= 2:
-						pass
+						elif reference["GBReference_title"] == "Direct Submission" and state >= 2:
+							pass
 
-					elif reference["GBReference_title"] != "Direct Submission":
-						state = 2
-						#print(title)
-						if "Direct Submission" in title:
-							title.remove("Direct Submission")
-						title.append(reference["GBReference_title"])
+						elif reference["GBReference_title"] != "Direct Submission":
+							state = 2
+							#print(title)
+							if "Direct Submission" in title:
+								title.remove("Direct Submission")
+							title.append(reference["GBReference_title"])
 
-					else: #unexpected input
-						print(record["GBSeq_references"]["GBReference"])
-						print(reference["GBReference_title"])
-						raise Exception
+						else: #unexpected input
+							print(record["GBSeq_references"]["GBReference"])
+							print(reference["GBReference_title"])
+							raise Exception
+					else:
+						if reference['GBReference_journal'] == "Unpublished":
+							state = 1 # only unpublished file exists
+							title.append("Direct Submission")
+						else:
+							print(record)
+							raise Exception
+
+
 				except:
-					print(reference)
+					print(record)
 					raise Exception
 
 		return title
@@ -892,6 +902,56 @@ def json_merge(json_list, out):
 
 	with open(out, "w") as fp:
 		json.dump(all_records, fp, indent = 4)
+
+
+def gene_seperator(classified_genes, path_out, email):
+	# For each genes, BLAST against NCBI DB, getoutput, reduction by local BLAST
+	for gene in classified_genes:
+		if gene!="others" and gene!="genomic":
+			
+			print("Checkpoint 1")
+			set_id = set()
+			print(gene)
+			list_foronlineblast = discrete_seqs(path_out+"_"+gene+".fasta")
+			SeqIO.write(list_foronlineblast,f"onlineblastquery_{gene}.fasta","fasta")
+			BLAST_downloader(f"onlineblastquery_{gene}.fasta", f"outonlineblast_{gene}.out")
+
+			print("Checkpoint 2")
+			for blastout in [file for file in os.listdir(os.getcwd()) if file.startswith(f"outonlineblast_{gene}.out")]:
+				list_id = get_ids(blastout)
+				set_id = set_id | set(list_id)
+
+			print("Checkpoint 3")
+			list_ID = list(set_id) 
+			print(len(list_ID))
+
+			print("Checkpoint 4")
+
+			if len(list_ID) > 0:
+				NCBI_Downloadbyacclist(email, list_ID, f"outonlineblast_{gene}.json")
+				getseq_without(f"outonlineblast_{gene}.json",f"Byblast_{gene}", additional_terms=additional_terms, exceptional_terms=[genus_term])
+				jsontransform(f"Byblast_{gene}.json",f"Byblast_transformed_{gene}.json")
+				jsontoxlsx(f"Byblast_{gene}.json", f"Byblast_{gene}.xlsx", 3000)
+				uni_jsontoxlsx(f"Byblast_transformed_{gene}.json", f"Byblast_transformed_{gene}.xlsx")
+
+			else:
+				Mes(f"No accessions available on {gene}")
+
+	for gene in classified_genes:
+		non_detected_acc = []
+		print(gene)
+		if gene!="others" and gene!="genomic":
+			acc_list = get_acc(f"Byblast_transformed_{gene}.json")
+			for acc in acc_list:
+				if acc in korean_acc:
+					print(acc)
+				else:
+					non_detected_acc.append(acc)
+
+			print(non_detected_acc)
+			check = json_pick(f"Byblast_transformed_{gene}.json", non_detected_acc, f"Putative_{gene}.json")
+			if check == True:
+				uni_jsontoxlsx(f"Putative_{gene}.json", f"Putative_{gene}.xlsx")
 
 
 '''
