@@ -94,7 +94,7 @@ def NCBI_Download(Email, term, out):
 			ID_string = ",".join(list_ID[i*cut:])
 			sleep(0.3)
 			cnt+=len(list_ID[i*cut:])
-			Mes(f'{cnt}/{cnt_all} {100*cnt/cnt_all}% {time.time()-start_time}s')
+			Mes(f'{cnt}/{cnt_all} {round(100*cnt/cnt_all,2)}% {round(time.time()-start_time,2)}s')
 
 			try: 
 				handle = Entrez.efetch(db="nucleotide",id=ID_string, rettype="gb",retmode="xml")
@@ -382,23 +382,27 @@ def jsontransform(json_in, out):
 
 		for reference in record["GBSeq_references"]["GBReference"]:
 			if type(reference) == type({"dict":"dict"}):
-				if reference["GBReference_title"] == "Direct Submission" and state <= 1:
-					state = 1
-					title.append("Direct Submission")
+				try:
+					if reference["GBReference_title"] == "Direct Submission" and state <= 1:
+						state = 1
+						title.append("Direct Submission")
 
-				elif reference["GBReference_title"] == "Direct Submission" and state >= 2:
-					pass
+					elif reference["GBReference_title"] == "Direct Submission" and state >= 2:
+						pass
 
-				elif reference["GBReference_title"] != "Direct Submission":
-					state = 2
-					#print(title)
-					if "Direct Submission" in title:
-						title.remove("Direct Submission")
-					title.append(reference["GBReference_title"])
+					elif reference["GBReference_title"] != "Direct Submission":
+						state = 2
+						#print(title)
+						if "Direct Submission" in title:
+							title.remove("Direct Submission")
+						title.append(reference["GBReference_title"])
 
-				else: #unexpected input
-					print(record["GBSeq_references"]["GBReference"])
-					print(reference["GBReference_title"])
+					else: #unexpected input
+						print(record["GBSeq_references"]["GBReference"])
+						print(reference["GBReference_title"])
+						raise Exception
+				except:
+					print(reference)
 					raise Exception
 
 		return title
@@ -525,7 +529,7 @@ def getseq(DB, gene, out, additional_terms = []):
 			list_temp = []
 			for key in record:
 				#print(str(record[key]).lower())
-				if (any(term.lower() in str(record[key]).lower() for term in additional_terms)):
+				if (any(term.lower() in str(record[key]).lower() for term in additional_terms)) or len(additional_terms)==0:
 					#print(record[key])
 					list_temp.append("1")
 				else:
