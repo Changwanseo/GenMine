@@ -355,8 +355,8 @@ def jsontransform(json_in, out):
 					raise Exception
 
 		else:
-			print(record)
-			raise Exception
+			#print(record)
+			return ["Unpublished"], []
 
 		
 
@@ -379,41 +379,47 @@ def jsontransform(json_in, out):
 
 		state = 0 
 		title = []
+		if "GBSeq_reference" in record:
+			for reference in record["GBSeq_references"]["GBReference"]:
+				if type(reference) == type({"dict":"dict"}):
+					try:
+						print(len(reference))
+						if "GBReference_title" in reference:
+							if reference["GBReference_title"] == "Direct Submission" and state <= 1:
+								state = 1 # only unpublished file exists
+								title.append("Direct Submission")
 
-		for reference in record["GBSeq_references"]["GBReference"]:
-			if type(reference) == type({"dict":"dict"}):
-				try:
-					if "GBReference_title" in reference:
-						if reference["GBReference_title"] == "Direct Submission" and state <= 1:
-							state = 1 # only unpublished file exists
-							title.append("Direct Submission")
+							elif reference["GBReference_title"] == "Direct Submission" and state >= 2:
+								pass
 
-						elif reference["GBReference_title"] == "Direct Submission" and state >= 2:
-							pass
+							elif reference["GBReference_title"] != "Direct Submission":
+								state = 2
+								#print(title)
+								if "Direct Submission" in title:
+									title.remove("Direct Submission")
+								title.append(reference["GBReference_title"])
 
-						elif reference["GBReference_title"] != "Direct Submission":
-							state = 2
-							#print(title)
-							if "Direct Submission" in title:
-								title.remove("Direct Submission")
-							title.append(reference["GBReference_title"])
-
-						else: #unexpected input
-							print(record["GBSeq_references"]["GBReference"])
-							print(reference["GBReference_title"])
-							raise Exception
-					else:
-						if reference['GBReference_journal'] == "Unpublished":
-							state = 1 # only unpublished file exists
-							title.append("Direct Submission")
+							else: #unexpected input
+								print(record["GBSeq_references"]["GBReference"])
+								print(reference["GBReference_title"])
+								raise Exception
 						else:
-							print(record)
-							raise Exception
+							if reference['GBReference_journal'] == "Unpublished":
+								state = 1 # only unpublished file exists
+								title.append("Direct Submission")
+							else:
+								# only journal record exists and no title exists
+								state = 2
+								title.append("Unknown")
+								print(record)
+								#raise Exception
 
 
-				except:
-					print(record)
-					raise Exception
+					except:
+						print(record)
+						raise Exception
+		else:
+			title = []
 
 		return title
 
@@ -472,8 +478,9 @@ def jsontransform(json_in, out):
 					raise Exception
 
 		else:
+			print("No author information")
 			print(record)
-			raise Exception
+			return []
 
 
 		for reference in record["GBSeq_references"]["GBReference"]:
@@ -482,11 +489,11 @@ def jsontransform(json_in, out):
 				if type(reference) == type({"dict":"dict"}):
 					if "GBAuthor" in reference["GBReference_authors"]:
 						#print(type(reference["GBReference_authors"]["GBAuthor"]))
-						if type(reference["GBReference_authors"]["GBAuthor"]) == type(["l","i","s","t"]):
+						if type(reference["GBReference_authors"]["GBAuthor"]) == list:
 							for author in reference["GBReference_authors"]["GBAuthor"]:
 								if not(author in author_list):
 									author_list.append(author)
-						elif type(reference["GBReference_authors"]["GBAuthor"]) == type("string"):
+						elif type(reference["GBReference_authors"]["GBAuthor"]) == str:
 							author_list.append(reference["GBReference_authors"]["GBAuthor"])
 
 		author_list = list(set(author_list))

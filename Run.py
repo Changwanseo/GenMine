@@ -6,8 +6,8 @@ import os
 
 # Default arguments
 email = "wan101010@snu.ac.kr"
-genus_term = "Umbelopsis" #Genus
-date = "2020-04-22"
+genus_term = "Amanita" #Genus
+date = "2020-05-03"
 path_out = f"{genus_term}_{date}"
 path_localgb = f"{path_out}.json"
 path_localgb_xlsx = f"{path_out}.xlsx"
