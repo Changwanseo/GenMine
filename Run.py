@@ -1,17 +1,19 @@
 from lib import GenMiner as Gen
 import argparse
-from datetime import datetime
+from datetime import datetime, date
 
 import os
 
 # Default arguments
 email = "wan101010@snu.ac.kr"
-genus_term = "Amanita" #Genus
-date = "2020-05-03"
+genus_term = "Marasmiellus" #Genus
+date = date.today().strftime("%Y-%m-%d")
 path_out = f"{genus_term}_{date}"
 path_localgb = f"{path_out}.json"
 path_localgb_xlsx = f"{path_out}.xlsx"
 max_len = 5000 # Excluding too long (genomic) Sequences
+date_start = -1
+date_end = -1
 additional_terms = []
 struct = []
 
@@ -21,7 +23,9 @@ parser.add_argument("--email", "-e", help = "entrez email", type=str)
 parser.add_argument("--genus", "-g", help = "genus to find", type=str)
 parser.add_argument("--additional", "-a", nargs='*', help = "additional terms", type=str)
 parser.add_argument("--out", "-o", help = "out path", type=str)
-parser.add_argument("--max", "-m", help = "maximum length", type=int)
+parser.add_argument("--max", "-m", help = "maximum length of sequence to search, in order to remove genomic sequences", type=int)
+#parser.add_argument("--start", "-d1", help = "starting search date", type=int)
+#parser.add_argument("--end", "-d2", help = "starting end date", type=int)
 
 args = parser.parse_args()
 
@@ -57,7 +61,7 @@ Gen.jsontoxlsx(path_localgb, path_localgb_xlsx, max_len)
 Gen.getseq(path_localgb, genus_term, path_out, additional_terms=additional_terms)
 Gen.jsontransform(path_out+".json",path_out+"_transformed.json")
 
-Gen.jsontoxlsx(path_out+".json", path_out+".xlsx", 3000)
+Gen.jsontoxlsx(path_out+".json", path_out+".xlsx", max_len)
 Gen.uni_jsontoxlsx(path_out+"_transformed.json",path_out+"_transformed.xlsx")
 
 korean_acc = Gen.get_acc(path_out+"_transformed.json")
@@ -71,8 +75,8 @@ Gen.gene_seperator(classified_genes,path_out, email)
 
 final_putative_list = [file for file in os.listdir(os.getcwd()) if file.startswith("Putative") and file.endswith(".json")]
 
-Gen.json_merge(final_putative_list, f"Putative_{genus_term}_All.json")
-Gen.uni_jsontoxlsx(f"Putative_{genus_term}_All.json", f"Putative_{genus_term}_All.xlsx")
+Gen.json_merge(final_putative_list, f"Putative_{path_out}_All.json")
+Gen.uni_jsontoxlsx(f"Putative_{path_out}_All.json", f"Putative_{path_out}_All.xlsx")
 
 #Build_DB(path_out+".fasta")
 #BLASTn(path_out+".fasta",path_out+".fasta",10,"out.txt")
@@ -84,4 +88,4 @@ Gen.uni_jsontoxlsx(f"Putative_{genus_term}_All.json", f"Putative_{genus_term}_Al
 #   Struct_seq("TYPE_"+gene, seq, struct, "DB", "NaN")
 
 
-log_file.close()
+#log_file.close()

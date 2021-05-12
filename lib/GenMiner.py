@@ -379,7 +379,7 @@ def jsontransform(json_in, out):
 
 		state = 0 
 		title = []
-		if "GBSeq_reference" in record:
+		if "GBSeq_references" in record:
 			for reference in record["GBSeq_references"]["GBReference"]:
 				if type(reference) == type({"dict":"dict"}):
 					try:
