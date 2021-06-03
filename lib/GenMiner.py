@@ -113,9 +113,17 @@ def NCBI_Download(Email, term, out):
 
 			pre_record = handle.read()
 			json_record = xml2dict(pre_record)
+
+
 			tmp_record_list = []
 
-			for record in json_record['GBSet']['GBSeq']:
+			if len(list_ID[i*cut:]) != 1:
+				for record in json_record['GBSet']['GBSeq']:
+					record_list.append(record)
+					tmp_record_list.append(record)
+			else:
+				print(record)
+				record = json_record['GBSet']['GBSeq']
 				record_list.append(record)
 				tmp_record_list.append(record)
 
@@ -263,6 +271,7 @@ def jsontoxlsx(json_in, xlsx, max_len=0):
 
 	dict_all = {}
 	for record in json_data:
+		print(record)
 		if int(record["GBSeq_length"]) < max_len: #in order to get rid of genome data
 			for key in record.keys():
 				if not(key in dict_all):

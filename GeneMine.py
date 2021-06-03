@@ -24,6 +24,8 @@ parser.add_argument("--genus", "-g", help = "genus to find", type=str)
 parser.add_argument("--additional", "-a", nargs='*', help = "additional terms", type=str)
 parser.add_argument("--out", "-o", help = "out path", type=str)
 parser.add_argument("--max", "-m", help = "maximum length of sequence to search, in order to remove genomic sequences", type=int)
+parser.add_argument("--start", "-s", help = "starting date of finding records, as term of YYYY-MM-DD",type=str)
+parser.add_argument("--end", "-f",  help = "final date of finding records, as term of YYYY-MM-DD",type=str)
 #parser.add_argument("--start", "-d1", help = "starting search date", type=int)
 #parser.add_argument("--end", "-d2", help = "starting end date", type=int)
 
@@ -43,6 +45,15 @@ if args.out != None:
 
 if args.max != None:
 	max_len = args.max
+
+if date_start != None:
+	date_start = args.start
+
+if date_start == -1:
+	date_start = 
+
+if date_end != None:
+	date_end = args.end
 
 # Make temporary directory if not exists
 
