@@ -46,7 +46,31 @@ def listtostring(list_in):
 	else:
 		return list_in
 
+def print_json(x):
+	print(json.dumps(x, indent=2))
+
+def NCBI_getacc(Email, term, out):
+
+	Entrez.email = Email
+
+	#Get all ID
+	handle = Entrez.esearch(db="Nucleotide", term=term)
+	record = Entrez.read(handle)
+	#Mes(str(record))
+
+	handle =  Entrez.esearch(db="Nucleotide", term=term, retmax=record['Count'], idtype="acc")
+	record = Entrez.read(handle)
+
+	list_ID = record['IdList']
+
+	Mes(f"Number of IDs: {len(list_ID)}")
+
+	return list_ID
+
+
 def NCBI_Download(Email, term, out):
+
+	path_tmp = "tmp"
 
 	def xml2dict(record):
 		dict_type = xmltodict.parse(record)
@@ -66,7 +90,7 @@ def NCBI_Download(Email, term, out):
 
 	list_ID = record['IdList']
 
-	print(len(list_ID))
+	#print(len(list_ID))
 
 	Mes(f"Number of IDs: {len(list_ID)}")
 
@@ -79,17 +103,18 @@ def NCBI_Download(Email, term, out):
 
 	record_list = []
 
-	#print(int((len(list_ID)-1)/cut)+1)
-
 	for i in range(int((len(list_ID)-1)/cut)+1):
-		if str(i) in [file for file in os.listdir("./tmp")]:
+
+		# Deal with saved files
+		if str(i) in [file for file in os.listdir(f"./{path_tmp}")]:
 			Mes("Found saved")
 			cnt+=cut
-			with open(f"./tmp/{i}", "rb") as fp:
+			with open(f"./{path_tmp}/{i}", "rb") as fp:
 				data = pickle.load(fp)
 				for record in data:
 					record_list.append(record)
 
+		# last chunk
 		elif i*cut+cut > len(list_ID):
 			ID_string = ",".join(list_ID[i*cut:])
 			sleep(0.3)
@@ -113,8 +138,6 @@ def NCBI_Download(Email, term, out):
 
 			pre_record = handle.read()
 			json_record = xml2dict(pre_record)
-
-
 			tmp_record_list = []
 
 			if len(list_ID[i*cut:]) != 1:
@@ -128,14 +151,13 @@ def NCBI_Download(Email, term, out):
 				tmp_record_list.append(record)
 
 			try:
-				with open(f"./tmp/{i}", "wb") as f:
+				with open(f"./{path_tmp}/{i}", "wb") as f:
 					pickle.dump(tmp_record_list,f)
 			except:
 				Mes("Saving Error")
 				raise Exception
 
-
-
+		# non last chunk
 		else:
 			Mes(i)
 			ID_string = ",".join(list_ID[i*cut:i*cut+cut])
@@ -167,7 +189,7 @@ def NCBI_Download(Email, term, out):
 				tmp_record_list.append(record)
 
 			try:
-				with open(f"./tmp/{i}", "wb") as f:
+				with open(f"./{path_tmp}/{i}", "wb") as f:
 					pickle.dump(tmp_record_list,f)
 			except:
 				Mes("Saving Error")
@@ -176,7 +198,14 @@ def NCBI_Download(Email, term, out):
 	with open(out, "w") as fp:
 		json_term = json.dump(record_list, fp, indent= 4)
 
+	# If success, remove tmp files
+	tmp_file_list = [file for file in os.listdir(f"./{path_tmp}/")]
+	for file in tmp_file_list:
+		os.remove(f"./{path_tmp}/{file}")
+
 def NCBI_Downloadbyacclist(Email, list_ID, out):
+
+	path_tmp = "tmp"
 
 	#print(list_ID)
 
@@ -200,11 +229,13 @@ def NCBI_Downloadbyacclist(Email, list_ID, out):
 	record_list = []
 
 	for i in range(int((len(list_ID)-1)/cut)+1):
+
+		# last chunk
 		if i*cut+cut > len(list_ID):
-			Mes(i)
+			#Mes(i)
 			ID_string = ",".join(list_ID[i*cut:])
 			sleep(0.3)
-			cnt+=cut
+			cnt+=len(list_ID[i*cut:])
 			Mes(f'{cnt}/{cnt_all} {100*cnt/cnt_all}% {time.time()-start_time}s')
 
 			try: 
@@ -224,14 +255,15 @@ def NCBI_Downloadbyacclist(Email, list_ID, out):
 				record_list.append(record)
 
 			try:
-				with open(f"./tmp/{i}", "wb") as f:
+				with open(f"./{path_tmp}/{i}", "wb") as f:
 					pickle.dump(record,f)
 			except:
 				Mes("Saving Error")
 				raise Exception
 
+		# non last chunk
 		else: 
-			Mes(i)
+			#Mes(i)
 			ID_string = ",".join(list_ID[i*cut:i*cut+cut])
 			sleep(0.3)
 			cnt+=cut
@@ -253,10 +285,10 @@ def NCBI_Downloadbyacclist(Email, list_ID, out):
 			
 			for record in json_record['GBSet']['GBSeq']:
 				record_list.append(record)
-				print(len(record_list))
+				#print(len(record_list))
 			
 			try:
-				with open(f"./tmp/{i}", "wb") as f:
+				with open(f"./{path_tmp}/{i}", "wb") as f:
 					pickle.dump(record,f)
 			except:
 				Mes("Saving Error")
@@ -265,13 +297,17 @@ def NCBI_Downloadbyacclist(Email, list_ID, out):
 	with open(out, "w") as fp:
 		json_term = json.dump(record_list, fp, indent= 4)
 
+	# If success, remove tmp files
+	tmp_file_list = [file for file in os.listdir(f"./{path_tmp}/")]
+	for file in tmp_file_list:
+		os.remove(f"./{path_tmp}/{file}")
+
 def jsontoxlsx(json_in, xlsx, max_len=0):
 	with open(json_in) as json_file:
 		json_data = json.load(json_file)
 
 	dict_all = {}
 	for record in json_data:
-		print(record)
 		if int(record["GBSeq_length"]) < max_len: #in order to get rid of genome data
 			for key in record.keys():
 				if not(key in dict_all):
@@ -314,11 +350,11 @@ def uni_jsontoxlsx(json_in, xlsx):
 	with pd.ExcelWriter(xlsx) as writer:
 		df.to_excel(writer, sheet_name = "Sheet 1")
 
-def jsontransform(json_in, out):
+def jsontransform(json_in, out): # transform to form easy to use
 
 	def Get_journal(record):
 
-		print("----------------------------")
+		#print("----------------------------")
 
 		state = 0 
 		journal = []
@@ -350,7 +386,7 @@ def jsontransform(json_in, out):
 									jounral.remove(i)
 					
 				else:
-					print(record)
+					#print(record)
 					raise Exception
 				#for reference in record["GBSeq_references"]["GBReference"]:
 			else:
@@ -360,7 +396,7 @@ def jsontransform(json_in, out):
 					else:
 						journal.append(record["GBReference_jounal"])
 				else:
-					print(record)
+					#print(record)
 					raise Exception
 
 		else:
@@ -374,13 +410,6 @@ def jsontransform(json_in, out):
 
 		if department == []:
 			pass
-			#print(json.dumps(record["GBSeq_references"], indent=2))
-			#raise Exception
-
-
-		print(f"journal: {journal}")
-		print(f"department: {department}")
-
 
 		return journal, department
 
@@ -392,7 +421,7 @@ def jsontransform(json_in, out):
 			for reference in record["GBSeq_references"]["GBReference"]:
 				if type(reference) == type({"dict":"dict"}):
 					try:
-						print(len(reference))
+						#print(len(reference))
 						if "GBReference_title" in reference:
 							if reference["GBReference_title"] == "Direct Submission" and state <= 1:
 								state = 1 # only unpublished file exists
@@ -437,11 +466,11 @@ def jsontransform(json_in, out):
 		author_list = []
 
 		if "GBSeq_references" in record.keys():
-			print("Found GBSeq_references")
+			#print("Found GBSeq_references")
 			if "GBReference" in record["GBSeq_references"].keys():
-				print("Found GBReference")
+				#print("Found GBReference")
 				if type(record["GBSeq_references"]["GBReference"]) == dict:
-					print("Single GBReference")
+					#print("Single GBReference")
 					if "GBReference_authors" in record["GBSeq_references"]["GBReference"]:
 						if type(record["GBSeq_references"]["GBReference"]["GBReference_authors"]["GBAuthor"]) == list:
 							for author in record["GBSeq_references"]["GBReference"]["GBReference_authors"]["GBAuthor"]:
@@ -456,12 +485,12 @@ def jsontransform(json_in, out):
 							author_list.append(record["GBSeq_references"]["GBReference"]["GBReference_consortium"])
 						
 					else:
-						print(record["GBSeq_references"]["GBReference"])
-						print("Failed to find authors")
+						#print(record["GBSeq_references"]["GBReference"])
+						#print("Failed to find authors")
 						raise Exception
 
 				elif type(record["GBSeq_references"]["GBReference"]) == list:
-					print("Multiple GBReference")
+					#print("Multiple GBReference")
 					for reference in record["GBSeq_references"]["GBReference"]:
 						if "GBReference_authors" in reference:
 							if type(reference) == dict:
@@ -476,19 +505,19 @@ def jsontransform(json_in, out):
 											author_list.append(reference["GBReference_authors"]["GBAuthor"])	
 					
 				else:
-					print(record)
+					#print(record)
 					raise Exception
 			else:
 				if "GBReferene_authors" in record.keys():
-					print(record)
+					#print(record)
 					raise Exception
 				else:
-					print(record)
+					#print(record)
 					raise Exception
 
 		else:
 			print("No author information")
-			print(record)
+			#print(record)
 			return []
 
 
@@ -506,7 +535,7 @@ def jsontransform(json_in, out):
 							author_list.append(reference["GBReference_authors"]["GBAuthor"])
 
 		author_list = list(set(author_list))
-		print(f"author: {author_list}")
+		#print(f"author: {author_list}")
 
 		if author_list == []:
 			print(json.dumps(record, indent = 2))
@@ -535,6 +564,25 @@ def jsontransform(json_in, out):
 			dict_temp["seq"] = record["GBSeq_sequence"]
 			dict_temp["primer"] = classification(record["GBSeq_definition"])
 			json_temp.append(dict_temp)
+
+		elif "GBSeq_feature-table" in record: # genomic data
+
+			dict_temp = {"acc":"","length":"", "seqname":"", "spname":"", "uploader":[],"journal":[], "department":[],"title":"","upload_date":"", "seq":""}
+			dict_temp["acc"] = record["GBSeq_locus"]
+			dict_temp["length"] = record["GBSeq_length"]
+			dict_temp["seqname"] = record["GBSeq_definition"]
+			dict_temp["spname"] = record["GBSeq_organism"]
+			dict_temp["uploader"] = Get_author(record)
+			dict_temp["journal"], dict_temp["department"] = Get_journal(record)
+			dict_temp["title"] = Get_title(record)
+			dict_temp["upload_date"] =  record["GBSeq_update-date"] # GBSeq_create-date
+			dict_temp["seq"] = "Genomic"
+			dict_temp["primer"] = classification(record["GBSeq_definition"])
+			json_temp.append(dict_temp)
+
+		else:
+			print_json(record)
+			raise Exception
 
 	with open(out, "w") as fp:
 		json_term = json.dump(json_temp, fp, indent= 4)
