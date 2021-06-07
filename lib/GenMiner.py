@@ -145,7 +145,6 @@ def NCBI_Download(Email, term, out):
 					record_list.append(record)
 					tmp_record_list.append(record)
 			else:
-				print(record)
 				record = json_record['GBSet']['GBSeq']
 				record_list.append(record)
 				tmp_record_list.append(record)
@@ -184,7 +183,12 @@ def NCBI_Download(Email, term, out):
 			json_record = xml2dict(pre_record)
 			tmp_record_list = []
 
-			for record in json_record['GBSet']['GBSeq']:
+			if len(list_ID[i*cut:]) != 1:
+				for record in json_record['GBSet']['GBSeq']:
+					record_list.append(record)
+					tmp_record_list.append(record)
+			else:
+				record = json_record['GBSet']['GBSeq']
 				record_list.append(record)
 				tmp_record_list.append(record)
 
@@ -204,6 +208,8 @@ def NCBI_Download(Email, term, out):
 		os.remove(f"./{path_tmp}/{file}")
 
 def NCBI_Downloadbyacclist(Email, list_ID, out):
+
+	print(list_ID)
 
 	path_tmp = "tmp"
 
@@ -251,12 +257,20 @@ def NCBI_Downloadbyacclist(Email, list_ID, out):
 
 			pre_record = handle.read()
 			json_record = xml2dict(pre_record)
-			for record in json_record['GBSet']['GBSeq']:
+			tmp_record_list = []
+
+			if len(list_ID[i*cut:]) != 1:
+				for record in json_record['GBSet']['GBSeq']:
+					record_list.append(record)
+					tmp_record_list.append(record)
+			else:
+				record = json_record['GBSet']['GBSeq']
 				record_list.append(record)
+				tmp_record_list.append(record)
 
 			try:
 				with open(f"./{path_tmp}/{i}", "wb") as f:
-					pickle.dump(record,f)
+					pickle.dump(tmp_record_list,f)
 			except:
 				Mes("Saving Error")
 				raise Exception
@@ -282,14 +296,20 @@ def NCBI_Downloadbyacclist(Email, list_ID, out):
 
 			pre_record = handle.read()
 			json_record = xml2dict(pre_record)
-			
-			for record in json_record['GBSet']['GBSeq']:
+			tmp_record_list = []
+
+			if len(list_ID[i*cut:]) != 1:
+				for record in json_record['GBSet']['GBSeq']:
+					record_list.append(record)
+					tmp_record_list.append(record)
+			else:
+				record = json_record['GBSet']['GBSeq']
 				record_list.append(record)
-				#print(len(record_list))
-			
+				tmp_record_list.append(record)
+
 			try:
 				with open(f"./{path_tmp}/{i}", "wb") as f:
-					pickle.dump(record,f)
+					pickle.dump(tmp_record_list,f)
 			except:
 				Mes("Saving Error")
 				raise Exception
@@ -308,10 +328,14 @@ def jsontoxlsx(json_in, xlsx, max_len=0):
 
 	dict_all = {}
 	for record in json_data:
-		if int(record["GBSeq_length"]) < max_len: #in order to get rid of genome data
-			for key in record.keys():
-				if not(key in dict_all):
-					dict_all[key] = []
+		try:
+			if int(record["GBSeq_length"]) < max_len: #in order to get rid of genome data
+				for key in record.keys():
+					if not(key in dict_all):
+						dict_all[key] = []
+		except:
+			print_json(json_data)
+			raise Exception
 
 	for record in json_data:
 		if int(record["GBSeq_length"]) < max_len: #in order to get rid of genome data
