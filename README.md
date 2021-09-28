@@ -1,8 +1,14 @@
-# GenMiner
+# GenMine
  A GenBank data mining program for (mostly fungal) taxonomists
  
+ GenMine downloads GenBank nucleotide data.
+ GenMine filters downloaded data with frequently used genes in taxonomy.
+
+ Publication : Korean *Penicillium* in GenBank
+ Citation: TBD
+ 
 # Install
-TBD
+TBD (we are going to provide pip and conda installation options)
 
 # Use
 
@@ -37,8 +43,12 @@ python GenMine.py -e <your-email> -g <genus> -o <outpath>
  # Advantages
  - GenMine doesn't misses records, especially with multiple terms
  - GenMine can download discontinuously, especially useful in low internet condition
- - GenMine classifies downloaded records by gentypes (ITS, LSU, SSU, BenA etc...)
+ - GenMine classifies downloaded records by gentypes (ITS, LSU, SSU, *BenA* etc...)
  * If you want more gene types, issue it!
 
 # Limitations
-- Slower than Entrez, due to completeness and stability
+- Slower than Entrez (sometimes a lot), due to completeness and stability
+
+# Bug reports and Suggestions
+- Bug reports and suggestions are available in Issues or directly to wan101010@snu.ac.kr
+- However, we want GenMine to remain as small tool. For suggestions that are little further to purpose of GenMine might be accepted in our upcomming softwares
