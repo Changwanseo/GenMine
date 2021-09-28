@@ -1,7 +1,6 @@
 from Bio import Entrez
 from Bio import SeqIO
 from Bio import pairwise2
-from Bio.Blast import NCBIWWW
 from Bio.pairwise2 import format_alignment
 from Bio.Blast.Applications import NcbiblastnCommandline
 from Bio.Blast import NCBIXML
@@ -9,21 +8,16 @@ from Bio.Seq import Seq
 import time
 from time import sleep
 import pickle
-from ete3 import Tree
 import json
 import re
 from datetime import datetime
 from itertools import repeat
 import xmltodict
-import os
-import subprocess
-import sys
-import copy
+import os, sys, subprocess
 import random
 import pickle
 import pandas as pd
 import shutil
-import multiprocessing as mp
 
 
 log_file = open("log.txt","w")
@@ -58,6 +52,7 @@ def NCBI_getacc(Email, term, out):
 	record = Entrez.read(handle)
 	#Mes(str(record))
 
+	sleep(5)
 	handle =  Entrez.esearch(db="Nucleotide", term=term, retmax=record['Count'], idtype="acc")
 	record = Entrez.read(handle)
 
@@ -426,8 +421,6 @@ def jsontransform(json_in, out): # transform to form easy to use
 		else:
 			#print(record)
 			return ["Unpublished"], []
-
-		
 
 		if journal == []:
 			journal = ["Unpublished"]
@@ -805,7 +798,6 @@ def BLAST_downloader(fasta_in, blast_out):
 	records = SeqIO.parse(fasta_in,"fasta")
 	for i,record in enumerate(list(records)):
 		print(i)
-		#result_handle = NCBIWWW.qblast("blastn","nt",record.format("fasta"), hitlist_size=100000000,perc_ident=80)
 		query = SeqIO.write(record,"temp.fasta","fasta")
 		os.system(f"blastn -out {blast_out}_{i}.xml -outfmt 5 -query temp.fasta -db /data/cwseo/BLAST_DB/public/nt -evalue 0.1 -num_threads 2")
 		#blastn_cline = NcbiblastnCommandline(query="temp.fasta",db="nr",evalue=0.1,outfmt=7,out=f"{blast_out}_{i}.xml")

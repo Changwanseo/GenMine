@@ -5,12 +5,10 @@ from datetime import datetime, date
 import os
 
 # Default arguments
-email = "wan101010@snu.ac.kr"
-genus_term = "Marasmiellus" #Genus
+#email = ""
+#genus_term = "" #Genus
 date = date.today().strftime("%Y-%m-%d")
 path_out = f"{genus_term}_{date}"
-path_localgb = f"{path_out}.json"
-path_localgb_xlsx = f"{path_out}.xlsx"
 max_len = 5000 # Excluding too long (genomic) Sequences
 date_start = -1
 date_end = -1
@@ -33,9 +31,14 @@ args = parser.parse_args()
 
 if args.email != None:
 	email = args.email
+else:
+	print("No emails accepted, this might be bad for NCBI connection")
 
 if args.genus != None:
 	genus_term = args.genus
+else:
+	print("No genus term inserted. Aborted")
+	raise Exception
 
 if args.additional != None:
 	additional_term = list(args.additional)
@@ -49,11 +52,16 @@ if args.max != None:
 if date_start != None:
 	date_start = args.start
 
+path_localgb = f"{path_out}.json"
+path_localgb_xlsx = f"{path_out}.xlsx"
+
+'''
 if date_start == -1:
 	date_start = 
 
 if date_end != None:
 	date_end = args.end
+'''
 
 # Make temporary directory if not exists
 
