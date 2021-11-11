@@ -14,10 +14,10 @@ WIP (we are going to provide pip and conda installation options)
 
 1. Download this repository
 2. Enter to the folder and run following commands
-'''
+```
 conda env create --file GenMine.yaml
 conda activate GenMine
-'''
+```
 
 
 # Use
