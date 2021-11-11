@@ -7,13 +7,9 @@ import os
 # Default arguments
 #email = ""
 #genus_term = "" #Genus
-date = date.today().strftime("%Y-%m-%d")
-path_out = f"{genus_term}_{date}"
-max_len = 5000 # Excluding too long (genomic) Sequences
+
 date_start = -1
 date_end = -1
-additional_terms = []
-struct = []
 
 # Argument input for running in commandline mode
 parser = argparse.ArgumentParser(description='Download genbank records')
@@ -54,6 +50,13 @@ if date_start != None:
 
 path_localgb = f"{path_out}.json"
 path_localgb_xlsx = f"{path_out}.xlsx"
+
+date = date.today().strftime("%Y-%m-%d")
+path_out = f"{genus_term}_{date}"
+max_len = 5000 # Excluding too long (genomic) Sequences
+
+additional_terms = []
+struct = []
 
 '''
 if date_start == -1:
