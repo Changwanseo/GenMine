@@ -29,7 +29,7 @@ python GenMine.py -e <your-email> -g <genus> -o <outpath>
 
 * Essential Parameters
 ```
---genus, -g : genus you want to parse
+--genus, -g : genus (or higher taxa) you want to parse
 --out, -o : output path
 ```
  
