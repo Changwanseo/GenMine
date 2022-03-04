@@ -5,8 +5,9 @@ dependencies:
   - biopython=1.78=py39h2bbff1b_0
   - blas=1.0=mkl
   - bottleneck=1.3.2=py39h7cc1a96_1
-  - ca-certificates=2021.10.26=haa95532_4
+  - ca-certificates=2022.2.1=haa95532_0
   - certifi=2021.10.8=py39haa95532_2
+  - et_xmlfile=1.1.0=py39haa95532_0
   - intel-openmp=2021.4.0=haa95532_3556
   - mkl=2021.4.0=haa95532_640
   - mkl-service=2.4.0=py39h2bbff1b_0
@@ -15,6 +16,7 @@ dependencies:
   - numexpr=2.8.1=py39hb80d3ca_0
   - numpy=1.21.2=py39hfca59bb_0
   - numpy-base=1.21.2=py39h0829f74_0
+  - openpyxl=3.0.9=pyhd3eb1b0_0
   - openssl=1.1.1m=h2bbff1b_0
   - packaging=21.3=pyhd3eb1b0_0
   - pandas=1.3.5=py39h6214cd6_0
