@@ -72,10 +72,10 @@ struct = []
 
 """
 if date_start == -1:
-	date_start = 
+    date_start = 
 
 if date_end != None:
-	date_end = args.end
+    date_end = args.end
 """
 
 # Make temporary directory if not exists
@@ -86,10 +86,10 @@ except:
     pass
 
 # Download all seqs from NCBI with genus Penicillium and save into json
-# Gen.NCBI_Download(email, genus_term, path_localgb)
+Gen.NCBI_Download(email, genus_term, path_localgb)
 
 # Turn downloaded json to xlsx
-# Gen.jsontoxlsx(path_localgb, path_localgb_xlsx, max_len)
+Gen.jsontoxlsx(path_localgb, path_localgb_xlsx, max_len)
 
 # Get seqs with term Korea
 Gen.getseq(path_localgb, genus_term, path_out, additional_terms=additional_terms)
