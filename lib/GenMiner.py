@@ -472,7 +472,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
                             journal.append(reference["GBReference_journal"])
                             for i in journal:
                                 if "unpublished" in i.lower():
-                                    jounral.remove(i)
+                                    journal.remove(i)
 
                 else:
                     # print(record)
@@ -558,22 +558,19 @@ def jsontransform(json_in, out):  # transform to form easy to use
         author_list = []
 
         if "GBSeq_references" in record.keys():
-            # print("Found GBSeq_references")
             if "GBReference" in record["GBSeq_references"].keys():
-                # print("Found GBReference")
-                if type(record["GBSeq_references"]["GBReference"]) == dict:
-                    # print("Single GBReference")
+                if isinstance(record["GBSeq_references"]["GBReference"], dict):
                     if (
                         "GBReference_authors"
                         in record["GBSeq_references"]["GBReference"]
                     ):
-                        if (
+                        if isinstance(
                             type(
                                 record["GBSeq_references"]["GBReference"][
                                     "GBReference_authors"
                                 ]["GBAuthor"]
-                            )
-                            == list
+                            ),
+                            list,
                         ):
                             for author in record["GBSeq_references"]["GBReference"][
                                 "GBReference_authors"
@@ -617,11 +614,14 @@ def jsontransform(json_in, out):  # transform to form easy to use
                             )
 
                     else:
-                        # print(record["GBSeq_references"]["GBReference"])
-                        # print("Failed to find authors")
-                        raise Exception
+                        print(record["GBSeq_references"]["GBReference"])
+                        print("Failed to find authors")
+                        return (
+                            []
+                        )  # in some of the records, no author exists. See NG_071242
+                        # raise Exception
 
-                elif type(record["GBSeq_references"]["GBReference"]) == list:
+                elif isinstance(record["GBSeq_references"]["GBReference"], list):
                     # print("Multiple GBReference")
                     for reference in record["GBSeq_references"]["GBReference"]:
                         if "GBReference_authors" in reference:
@@ -660,42 +660,50 @@ def jsontransform(json_in, out):  # transform to form easy to use
                                             )
 
                 else:
-                    # print(record)
+                    print(record)
                     raise Exception
             else:
                 if "GBReferene_authors" in record.keys():
-                    # print(record)
+                    print(record)
                     raise Exception
                 else:
-                    # print(record)
+                    print(record)
                     raise Exception
 
         else:
             print("No author information")
             # print(record)
-            return []
+            # return []
 
+        """
         for reference in record["GBSeq_references"]["GBReference"]:
             # print(json.dumps(reference, indent=2))
             if "GBReference_authors" in reference:
-                if type(reference) == type({"dict": "dict"}):
+                if isinstance(reference, dict):
                     if "GBAuthor" in reference["GBReference_authors"]:
                         # print(type(reference["GBReference_authors"]["GBAuthor"]))
-                        if type(reference["GBReference_authors"]["GBAuthor"]) == list:
+                        if isinstance(
+                            reference["GBReference_authors"]["GBAuthor"], list
+                        ):
                             for author in reference["GBReference_authors"]["GBAuthor"]:
                                 if not (author in author_list):
                                     author_list.append(author)
-                        elif type(reference["GBReference_authors"]["GBAuthor"]) == str:
+                        elif isinstance(
+                            reference["GBReference_authors"]["GBAuthor"], str
+                        ):
                             author_list.append(
                                 reference["GBReference_authors"]["GBAuthor"]
                             )
 
+        """
         author_list = list(set(author_list))
         # print(f"author: {author_list}")
 
+        """
         if author_list == []:
             print(json.dumps(record, indent=2))
             raise Exception
+        """
 
         return author_list
 
