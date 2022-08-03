@@ -14,8 +14,9 @@ date_end = -1
 # Argument input for running in commandline mode
 parser = argparse.ArgumentParser(description="Download genbank records")
 parser.add_argument("--email", "-e", help="entrez email", type=str)
-parser.add_argument("--genus", "-g", help="genus to find", type=str)
+parser.add_argument("--genus", "-g", nargs="*", help="genus to find", type=str)
 parser.add_argument("--additional", "-a", nargs="*", help="additional terms", type=str)
+parser.add_argument("--accession", "-c", help="Accession list file to get", type=str)
 parser.add_argument("--out", "-o", help="out path", type=str)
 parser.add_argument(
     "--max",
@@ -42,10 +43,15 @@ if args.email != None:
 else:
     print("No emails accepted, this might be bad for NCBI connection")
 
-if args.genus != None:
+genus_term = None
+accession_file = None
+
+if args.accession != None:
+    accession_file = args.accession
+elif args.genus != None:
     genus_term = args.genus
 else:
-    print("No genus term inserted. Aborted")
+    print("No genus term nor accession numbers inserted. Aborted")
     raise Exception
 
 if args.additional != None:
@@ -85,8 +91,22 @@ try:
 except:
     pass
 
+
 # Download all seqs from NCBI with genus Penicillium and save into json
-Gen.NCBI_Download(email, genus_term, path_localgb)
+if not (genus_term is None):
+    Gen.NCBI_Download(email, genus_term, path_localgb)
+elif not (accession_file is None):
+    try:
+        with open(accession_file, "r") as f:
+            accession_list = [l.strip() for l in f.readlines()]
+        Gen.NCBI_Downloadbyacclist(email, accession_list, path_localgb)
+    except:
+        Gen.Mes(f"Accession file {accession_file} is not valid!")
+        raise Exception
+else:
+    Gen.Mes("Either genus name nor accession file is needed!")
+    raise Exception
+
 
 # Turn downloaded json to xlsx
 Gen.jsontoxlsx(path_localgb, path_localgb_xlsx, max_len)

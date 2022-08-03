@@ -362,6 +362,77 @@ def NCBI_Downloadbyacclist(Email, list_ID, out):
         os.remove(f"./{path_tmp}/{file}")
 
 
+# get wanted object from iterating dictionary
+# if wanted object is in value of label
+def retrieve(input_dict, obj, filter_list=[], add=" = ", default=""):
+    obj_list = []
+    for key in input_dict.keys():
+        if key == obj:
+            if not (type(input_dict[key]) is dict):
+                return_list = []
+                if type(input_dict[key]) in (str, int, float):
+                    return_list.append(str(input_dict[key]))
+                elif type(input_dict[key]) is list:
+                    return_list += [str(i) for i in input_dict[key]]
+                return return_list
+
+        elif type(input_dict[key]) is dict:
+            obj_list += retrieve(input_dict[key])
+
+    out_list = []
+
+    for o in obj_list:
+        if not (o in filter_list):
+            out_list.append(o)
+
+    if len(out_list) == 0:
+        return default
+    else:
+        return add.join(" = ")
+
+
+# get wanted object from iterating dictionary
+# if wanted object and label is in parellel location
+def retrieve_parallel(input_dict, label, label_value, obj):
+    obj_list = []
+
+    for key in input_dict.keys():
+        if key == label and input_dict[label] == label_value:
+            # print(input_dict)
+            # find parallel keys
+            for k in input_dict.keys():
+                if k == obj:
+                    if type(input_dict[obj]) in (str, int, float):
+                        obj_list.append(str(input_dict[obj]))
+                    elif type(input_dict[obj]) in (list, set):
+                        obj_list += [str(i) for i in input_dict[obj]]
+
+        elif type(input_dict[key]) is list:
+            for o in input_dict[key]:
+                if type(o) is dict:
+                    obj_list += retrieve_parallel(o, label, label_value, obj)
+
+        elif type(input_dict[key]) is dict:
+
+            obj_list += retrieve_parallel(input_dict[key], label, label_value, obj)
+
+    return obj_list
+
+
+# change list output as string form
+def format_list(input_list, filter_list=[], add=", ", default=""):
+
+    out_list = []
+    for o in input_list:
+        if not (o in filter_list):
+            out_list.append(o)
+
+    if len(out_list) == 0:
+        return default
+    else:
+        return add.join(out_list)
+
+
 def jsontoxlsx(json_in, xlsx, max_len=0):
     with open(json_in) as json_file:
         json_data = json.load(json_file)
@@ -553,6 +624,17 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
         return title
 
+    def Get_voucher(record):
+
+        obj_list = retrieve_parallel(
+            input_dict=record,
+            label="GBQualifier_name",
+            label_value="specimen_voucher",
+            obj="GBQualifier_value",
+        )
+
+        return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
+
     def Get_author(record):
 
         author_list = []
@@ -725,6 +807,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
                 "journal": [],
                 "department": [],
                 "title": "",
+                "voucher": "",
                 "upload_date": "",
                 "seq": "",
             }
@@ -737,6 +820,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["title"] = Get_title(record)
             dict_temp["upload_date"] = record["GBSeq_update-date"]  # GBSeq_create-date
             dict_temp["seq"] = record["GBSeq_sequence"]
+            dict_temp["voucher"] = Get_voucher(record)
             dict_temp["primer"] = classification(record["GBSeq_definition"])
             json_temp.append(dict_temp)
 
@@ -751,6 +835,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
                 "journal": [],
                 "department": [],
                 "title": "",
+                "voucher": "",
                 "upload_date": "",
                 "seq": "",
             }
@@ -763,6 +848,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["title"] = Get_title(record)
             dict_temp["upload_date"] = record["GBSeq_update-date"]  # GBSeq_create-date
             dict_temp["seq"] = "Genomic"
+            dict_temp["voucher"] = Get_voucher(record)
             dict_temp["primer"] = classification(record["GBSeq_definition"])
             json_temp.append(dict_temp)
 
