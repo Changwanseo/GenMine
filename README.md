@@ -11,7 +11,13 @@ Chang Wan Seo, Sung Hyun Kim, Young Woon Lim & Myung Soo Park (2022) Re-Identifi
  
  
 # Install
-WIP (we are going to provide pip and conda installation options)
+* pip
+```
+pip install GenMine
+```
+
+
+conda : WIP 
 
 * currently possible method
 
@@ -23,12 +29,17 @@ conda activate GenMine
 ```
 
 
-# Use
+# Usage
+# Local install
 
-* Usage
 ```
 python GenMine.py -e <your-email> -g <genus> -o <outpath>
 ```
+# Pip
+```
+GenMine -e <your-email> -g <genus> -o <outpath>
+```
+
 
 * Essential Parameters
 ```
