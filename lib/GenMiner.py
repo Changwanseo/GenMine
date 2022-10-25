@@ -35,6 +35,7 @@ def Time_now():
     return Date_time
 
 
+# To both print to stdout and logfile
 def Mes(text):
     text = str(text)
     text = Time_now() + text
@@ -49,10 +50,12 @@ def listtostring(list_in):
         return list_in
 
 
+# Pretty print json
 def print_json(x):
     print(json.dumps(x, indent=2))
 
 
+# Get accession list from GenBank
 def NCBI_getacc(Email, term, out):
 
     Entrez.email = Email
@@ -75,6 +78,7 @@ def NCBI_getacc(Email, term, out):
     return list_ID
 
 
+# GenBank, download all by given term
 def NCBI_Download(Email, term, out):
 
     path_tmp = "tmp"
@@ -248,8 +252,6 @@ def NCBI_Download(Email, term, out):
 
 
 def NCBI_Downloadbyacclist(Email, list_ID, out):
-
-    print(list_ID)
 
     path_tmp = "tmp"
 
@@ -511,10 +513,8 @@ def uni_jsontoxlsx(json_in, xlsx):
 
 
 def jsontransform(json_in, out):  # transform to form easy to use
+    # Get journal from given record json
     def Get_journal(record):
-
-        # print("----------------------------")
-
         state = 0
         journal = []
         department = []
@@ -565,11 +565,8 @@ def jsontransform(json_in, out):  # transform to form easy to use
                             for i in journal:
                                 if "unpublished" in i.lower():
                                     journal.remove(i)
-
                 else:
-                    # print(record)
                     raise Exception
-                # for reference in record["GBSeq_references"]["GBReference"]:
             else:
                 if "GBReferene_jounral" in record.keys():
                     if "submitted" in record["GBReference_jounal"].lower():
@@ -577,11 +574,9 @@ def jsontransform(json_in, out):  # transform to form easy to use
                     else:
                         journal.append(record["GBReference_jounal"])
                 else:
-                    # print(record)
                     raise Exception
 
         else:
-            # print(record)
             return ["Unpublished"], []
 
         if journal == []:
@@ -592,6 +587,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
         return journal, department
 
+    # Get paper title from given record json
     def Get_title(record):
 
         state = 0
@@ -645,12 +641,61 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
         return title
 
+    # Get voucher from given record json
     def Get_voucher(record):
 
         obj_list = retrieve_parallel(
             input_dict=record,
             label="GBQualifier_name",
             label_value="specimen_voucher",
+            obj="GBQualifier_value",
+        )
+
+        return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
+
+    # Get type_material from given record json
+    def Get_type_material(record):
+
+        obj_list = retrieve_parallel(
+            input_dict=record,
+            label="GBQualifier_name",
+            label_value="type_material",
+            obj="GBQualifier_value",
+        )
+
+        return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
+
+    # Get strain from given record json
+    def Get_strain(record):
+
+        obj_list = retrieve_parallel(
+            input_dict=record,
+            label="GBQualifier_name",
+            label_value="strain",
+            obj="GBQualifier_value",
+        )
+
+        return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
+
+    # Get culture_collection from given record json
+    def Get_culture_collection(record):
+
+        obj_list = retrieve_parallel(
+            input_dict=record,
+            label="GBQualifier_name",
+            label_value="culture_collection",
+            obj="GBQualifier_value",
+        )
+
+        return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
+
+    # Get note from given record json
+    def Get_note(record):
+
+        obj_list = retrieve_parallel(
+            input_dict=record,
+            label="GBQualifier_name",
+            label_value="note",
             obj="GBQualifier_value",
         )
 
@@ -775,38 +820,8 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
         else:
             print("No author information")
-            # print(record)
-            # return []
 
-        """
-        for reference in record["GBSeq_references"]["GBReference"]:
-            # print(json.dumps(reference, indent=2))
-            if "GBReference_authors" in reference:
-                if isinstance(reference, dict):
-                    if "GBAuthor" in reference["GBReference_authors"]:
-                        # print(type(reference["GBReference_authors"]["GBAuthor"]))
-                        if isinstance(
-                            reference["GBReference_authors"]["GBAuthor"], list
-                        ):
-                            for author in reference["GBReference_authors"]["GBAuthor"]:
-                                if not (author in author_list):
-                                    author_list.append(author)
-                        elif isinstance(
-                            reference["GBReference_authors"]["GBAuthor"], str
-                        ):
-                            author_list.append(
-                                reference["GBReference_authors"]["GBAuthor"]
-                            )
-
-        """
         author_list = list(set(author_list))
-        # print(f"author: {author_list}")
-
-        """
-        if author_list == []:
-            print(json.dumps(record, indent=2))
-            raise Exception
-        """
 
         return author_list
 
@@ -817,8 +832,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     for record in json_data:
         if "GBSeq_sequence" in record:  # remove data without sequence
-            # print(json.dumps(record, indent=2))
-            # print("---------------------------------")
             dict_temp = {
                 "acc": "",
                 "length": "",
@@ -829,6 +842,10 @@ def jsontransform(json_in, out):  # transform to form easy to use
                 "department": [],
                 "title": "",
                 "voucher": "",
+                "type_material": "",
+                "strain": "",
+                "culture_collection": "",
+                "note": "",
                 "upload_date": "",
                 "seq": "",
             }
@@ -842,6 +859,12 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["upload_date"] = record["GBSeq_update-date"]  # GBSeq_create-date
             dict_temp["seq"] = record["GBSeq_sequence"]
             dict_temp["voucher"] = Get_voucher(record)
+
+            dict_temp["type_material"] = Get_type_material(record)
+            dict_temp["strain"] = Get_strain(record)
+            dict_temp["culture_collection"] = Get_culture_collection(record)
+            dict_temp["note"] = Get_note(record)
+
             dict_temp["primer"] = classification(record["GBSeq_definition"])
             json_temp.append(dict_temp)
 
@@ -857,6 +880,10 @@ def jsontransform(json_in, out):  # transform to form easy to use
                 "department": [],
                 "title": "",
                 "voucher": "",
+                "type_material": "",
+                "strain": "",
+                "culture_collection": "",
+                "note": "",
                 "upload_date": "",
                 "seq": "",
             }
@@ -870,6 +897,12 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["upload_date"] = record["GBSeq_update-date"]  # GBSeq_create-date
             dict_temp["seq"] = "Genomic"
             dict_temp["voucher"] = Get_voucher(record)
+
+            dict_temp["type_material"] = Get_type_material(record)
+            dict_temp["strain"] = Get_strain(record)
+            dict_temp["culture_collection"] = Get_culture_collection(record)
+            dict_temp["note"] = Get_note(record)
+
             dict_temp["primer"] = classification(record["GBSeq_definition"])
             json_temp.append(dict_temp)
 
@@ -893,29 +926,15 @@ def getseq(DB, gene, out, additional_terms=[]):
     outfasta = open(out + ".fasta", "w")
 
     for record in json_data:
-
         if True:
-
-            # if any(
-            #    gene.lower() in str(record[term]).lower()
-            #    for term in [
-            #        "GBSeq_definition",
-            #        "GBSeq_source",
-            #        "GBSeq_organism",
-            #        "GBSeq_taxonomy",
-            #    ]
-            # ):
-
             list_temp = []
             for key in record:
-                # print(str(record[key]).lower())
                 if (
                     any(
                         term.lower() in str(record[key]).lower()
                         for term in additional_terms
                     )
                 ) or len(additional_terms) == 0:
-                    # print(record[key])
                     list_temp.append("1")
                 else:
                     list_temp.append("0")
@@ -932,8 +951,6 @@ def getseq(DB, gene, out, additional_terms=[]):
             print(record)
 
     outjson = out + ".json"
-
-    print(outjson)
 
     with open(outjson, "w") as fp:
         json_term = json.dump(temp_list, fp, indent=4)
@@ -1423,106 +1440,3 @@ def gene_seperator(classified_genes, path_out, email):
             )
             if check == True:
                 uni_jsontoxlsx(f"Putative_{gene}.json", f"Putative_{gene}.xlsx")
-
-
-"""
-genus_term = "Umbelopsis" #Genus
-date = "2020-04-22"
-path_localgb = f"{genus_term}_{date}.json"
-path_localgb_xlsx = f"{genus_term}_{date}.xlsx"
-max_len = 5000 # Excluding too long (genomic) Sequences
-additional_terms = []
-struct = []
-path_out = f"{genus_term}_{date}"
-
-
-
-try:
-    os.mkdir("./tmp")
-except:
-    pass
-#Download all seqs from NCBI with genus Penicillium and save into json
-NCBI_Download(email, genus_term, path_localgb)
-
-# Turn downloaded json to xlsx
-jsontoxlsx(path_localgb, path_localgb_xlsx, max_len)
-
-# Get seqs with term Korea
-getseq(path_localgb, genus_term, path_out, additional_terms=additional_terms)
-jsontransform(path_out+".json",path_out+"_transformed.json")
-
-jsontoxlsx(path_out+".json", path_out+".xlsx", 3000)
-uni_jsontoxlsx(path_out+"_transformed.json",path_out+"_transformed.xlsx")
-
-korean_acc = get_acc(path_out+"_transformed.json")
-
-Mes(f"Total {len(korean_acc)} found")
-classified_genes = classifier(path_out+"_transformed.json",path_out)
-print(classified_genes)
-
-
-# For each genes, BLAST against NCBI DB, getoutput, reduction by local BLAST
-for gene in classified_genes:
-    if gene!="others" and gene!="genomic":
-        
-        print("Checkpoint 1")
-        set_id = set()
-        print(gene)
-        list_foronlineblast = discrete_seqs(path_out+"_"+gene+".fasta")
-        SeqIO.write(list_foronlineblast,f"onlineblastquery_{gene}.fasta","fasta")
-        BLAST_downloader(f"onlineblastquery_{gene}.fasta", f"outonlineblast_{gene}.out")
-
-        print("Checkpoint 2")
-        for blastout in [file for file in os.listdir(os.getcwd()) if file.startswith(f"outonlineblast_{gene}.out")]:
-            list_id = get_ids(blastout)
-            set_id = set_id | set(list_id)
-
-        print("Checkpoint 3")
-        list_ID = list(set_id) 
-        print(len(list_ID))
-
-        print("Checkpoint 4")
-
-        if len(list_ID) > 0:
-            NCBI_Downloadbyacclist(email, list_ID, f"outonlineblast_{gene}.json")
-            getseq_without(f"outonlineblast_{gene}.json",f"Byblast_{gene}", additional_terms=additional_terms, exceptional_terms=[genus_term])
-            jsontransform(f"Byblast_{gene}.json",f"Byblast_transformed_{gene}.json")
-            jsontoxlsx(f"Byblast_{gene}.json", f"Byblast_{gene}.xlsx", 3000)
-            uni_jsontoxlsx(f"Byblast_transformed_{gene}.json", f"Byblast_transformed_{gene}.xlsx")
-
-        else:
-            Mes(f"No accessions available on {gene}")
-
-for gene in classified_genes:
-    non_detected_acc = []
-    print(gene)
-    if gene!="others" and gene!="genomic":
-        acc_list = get_acc(f"Byblast_transformed_{gene}.json")
-        for acc in acc_list:
-            if acc in korean_acc:
-                print(acc)
-            else:
-                non_detected_acc.append(acc)
-
-        print(non_detected_acc)
-        check = json_pick(f"Byblast_transformed_{gene}.json", non_detected_acc, f"Putative_{gene}.json")
-        if check == True:
-            uni_jsontoxlsx(f"Putative_{gene}.json", f"Putative_{gene}.xlsx")
-
-final_putative_list = [file for file in os.listdir(os.getcwd()) if file.startswith("Putative") and file.endswith(".json")]
-
-json_merge(final_putative_list, f"Putative_{genus_term}_All.json")
-uni_jsontoxlsx(f"Putative_{genus_term}_All.json", f"Putative_{genus_term}_All.xlsx")
-
-#Build_DB(path_out+".fasta")
-#BLASTn(path_out+".fasta",path_out+".fasta",10,"out.txt")
-#BLAST_downloader(path_out+".fasta", path_out)
-
-
-#type_file = SeqIO.parse(path_out, "fasta")
-#for seq in type_file:
-#   Struct_seq("TYPE_"+gene, seq, struct, "DB", "NaN")
-
-
-log_file.close()
-"""
