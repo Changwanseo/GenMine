@@ -19,7 +19,6 @@ import pickle
 import pandas as pd
 import shutil
 
-
 log_file = open("log.txt", "w")
 
 # Logging Functions
@@ -149,7 +148,10 @@ def NCBI_Download(Email, term, out):
                             db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
                         )
                     except:
-                        sleep(1000)
+                        Mes(
+                            "Last requesting due to connection error, will be take long (15 min)..."
+                        )
+                        sleep(900)
                         handle = Entrez.efetch(
                             db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
                         )
@@ -157,6 +159,10 @@ def NCBI_Download(Email, term, out):
             pre_record = handle.read()
             json_record = xml2dict(pre_record)
             tmp_record_list = []
+
+            # If only one result available
+            if type(json_record["GBSet"]["GBSeq"]) is dict:
+                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
 
             if len(list_ID[i * cut :]) != 1:
                 for record in json_record["GBSet"]["GBSeq"]:
@@ -200,7 +206,10 @@ def NCBI_Download(Email, term, out):
                             db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
                         )
                     except:
-                        sleep(1000)
+                        Mes(
+                            "Last requesting due to connection error, will be take long (15 min)..."
+                        )
+                        sleep(900)
                         handle = Entrez.efetch(
                             db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
                         )
@@ -208,6 +217,10 @@ def NCBI_Download(Email, term, out):
             pre_record = handle.read()
             json_record = xml2dict(pre_record)
             tmp_record_list = []
+
+            # If only one result available
+            if type(json_record["GBSet"]["GBSeq"]) is dict:
+                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
 
             if len(list_ID[i * cut :]) != 1:
                 for record in json_record["GBSet"]["GBSeq"]:
@@ -292,6 +305,10 @@ def NCBI_Downloadbyacclist(Email, list_ID, out):
             json_record = xml2dict(pre_record)
             tmp_record_list = []
 
+            # If only one result available
+            if type(json_record["GBSet"]["GBSeq"]) is dict:
+                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
+
             if len(list_ID[i * cut :]) != 1:
                 for record in json_record["GBSet"]["GBSeq"]:
                     record_list.append(record)
@@ -336,6 +353,10 @@ def NCBI_Downloadbyacclist(Email, list_ID, out):
             pre_record = handle.read()
             json_record = xml2dict(pre_record)
             tmp_record_list = []
+
+            # If only one result available
+            if type(json_record["GBSet"]["GBSeq"]) is dict:
+                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
 
             if len(list_ID[i * cut :]) != 1:
                 for record in json_record["GBSet"]["GBSeq"]:
@@ -1405,7 +1426,6 @@ def gene_seperator(classified_genes, path_out, email):
 
 
 """
-email = "wan101010@snu.ac.kr"
 genus_term = "Umbelopsis" #Genus
 date = "2020-04-22"
 path_localgb = f"{genus_term}_{date}.json"

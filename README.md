@@ -16,26 +16,17 @@ Chang Wan Seo, Sung Hyun Kim, Young Woon Lim & Myung Soo Park (2022) Re-Identifi
 pip install GenMine
 ```
 
+* conda (WIP)
+Currently, please use indirect method
 
-conda : WIP 
-
-* currently possible method
-
-1. Download this repository
-2. Enter to the folder and run following commands
 ```
-conda env create --file GenMine.yaml
-conda activate GenMine
+conda create -n GenMine
+conda install pip
+pip install GenMine
 ```
 
 
 # Usage
-# Local install
-
-```
-python GenMine.py -e <your-email> -g <genus> -o <outpath>
-```
-# Pip
 ```
 GenMine -e <your-email> -g <genus> -o <outpath>
 ```
@@ -67,7 +58,7 @@ GenMine -e <your-email> -g <genus> -o <outpath>
  # Advantages
  - GenMine doesn't misses records, especially with multiple terms
  - GenMine can download discontinuously, especially useful in low internet condition
- - GenMine classifies downloaded records by gentypes (ITS, LSU, SSU, *BenA* etc...)
+ - GenMine classifies downloaded records by gene types (ITS, LSU, SSU, *BenA* etc...)
  * If you want more gene types, issue it!
 
 # Limitations

@@ -1,3 +1,8 @@
 ./tmp
+GenMine_env/
+GenMine.egg-info/
+build/
+dist/
 *.xlsx
 *.json
+*.fasta
