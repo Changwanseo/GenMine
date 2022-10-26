@@ -701,6 +701,18 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
         return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
 
+    # Get note from given record json
+    def Get_isolate(record):
+
+        obj_list = retrieve_parallel(
+            input_dict=record,
+            label="GBQualifier_name",
+            label_value="isolate",
+            obj="GBQualifier_value",
+        )
+
+        return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
+
     def Get_author(record):
 
         author_list = []
@@ -864,6 +876,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["strain"] = Get_strain(record)
             dict_temp["culture_collection"] = Get_culture_collection(record)
             dict_temp["note"] = Get_note(record)
+            dict_temp["isolate"] = Get_isolate(record)
 
             dict_temp["primer"] = classification(record["GBSeq_definition"])
             json_temp.append(dict_temp)
@@ -902,6 +915,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["strain"] = Get_strain(record)
             dict_temp["culture_collection"] = Get_culture_collection(record)
             dict_temp["note"] = Get_note(record)
+            dict_temp["isolate"] = Get_isolate(record)
 
             dict_temp["primer"] = classification(record["GBSeq_definition"])
             json_temp.append(dict_temp)
