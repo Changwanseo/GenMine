@@ -2,6 +2,7 @@ from Bio import Entrez
 from Bio import SeqIO
 from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
+
 from Bio.Blast.Applications import NcbiblastnCommandline
 from Bio.Blast import NCBIXML
 from Bio.Seq import Seq
@@ -55,15 +56,194 @@ def print_json(x):
     print(json.dumps(x, indent=2))
 
 
-# Get accession list from GenBank
-def NCBI_getacc(Email, term, out):
+def xml2dict(record):
+    dict_type = xmltodict.parse(record)
+    json_type = json.dumps(dict_type, indent=4)
+    dict2_type = json.loads(json_type)
+    return dict2_type
 
-    Entrez.email = Email
+
+def delcomma(string):
+    if string.endswith(","):
+        return string[:-1]
+    else:
+        return string
+
+
+# Main GenBank file downloadig function
+def downloader(list_acc, path_tmp, out, cut=50):
+
+    # Parse
+    cnt = 0  # counter by 50
+    cnt_all = len(list_acc)  # total number of records
+
+    start_time = time.time()
+
+    record_list = []
+
+    # Iterating with 50 items
+    for i in range(int((len(list_acc) - 1) / cut) + 1):
+
+        # Try to parse saved files
+        if str(i) in [file for file in os.listdir(f"{path_tmp}")]:
+            Mes("Found saved")
+            cnt += cut
+            with open(f"{path_tmp}/{i}", "rb") as fp:
+                data = pickle.load(fp)
+                for record in data:
+                    record_list.append(record)
+
+        # for last last chunk
+        elif i * cut + cut > len(list_acc):
+            acc_string = ",".join(list_acc[i * cut :])
+            sleep(0.3)
+            cnt += len(list_acc[i * cut :])
+            Mes(
+                f"{cnt}/{cnt_all} {round(100*cnt/cnt_all,2)}% {round(time.time()-start_time,2)}s"
+            )
+
+            # Parse xml
+            # First trial
+            try:
+                handle = Entrez.efetch(
+                    db="nucleotide", id=acc_string, rettype="gb", retmode="xml"
+                )
+
+            except:
+                Mes("Requesting again...")
+
+                # Second trial
+                try:
+                    sleep(10)
+                    handle = Entrez.efetch(
+                        db="nucleotide", id=acc_string, rettype="gb", retmode="xml"
+                    )
+
+                # Third trial
+                except:
+                    try:
+                        sleep(100)
+                        handle = Entrez.efetch(
+                            db="nucleotide", id=acc_string, rettype="gb", retmode="xml"
+                        )
+                    # Final trial
+                    except:
+                        Mes(
+                            "Last requesting due to connection error, will be take long (15 min)..."
+                        )
+                        sleep(900)
+                        handle = Entrez.efetch(
+                            db="nucleotide", id=acc_string, rettype="gb", retmode="xml"
+                        )
+
+            # Read parsed data
+            pre_record = handle.read()
+            json_record = xml2dict(pre_record)
+            tmp_record_list = []
+
+            # If only one result available, change record to list format
+            if type(json_record["GBSet"]["GBSeq"]) is dict:
+                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
+
+            if len(list_acc[i * cut :]) != 1:
+                for record in json_record["GBSet"]["GBSeq"]:
+                    record_list.append(record)
+                    tmp_record_list.append(record)
+            else:
+                record = json_record["GBSet"]["GBSeq"]
+                record_list.append(record)
+                tmp_record_list.append(record)
+
+            # Intermediate save for current data
+            try:
+                with open(f"{path_tmp}/{i}", "wb") as f:
+                    pickle.dump(tmp_record_list, f)
+            except:
+                Mes("Saving Error")
+                raise Exception
+
+        # non last chunk
+        else:
+            acc_string = ",".join(list_acc[i * cut : i * cut + cut])
+            sleep(0.3)
+            cnt += cut
+            Mes(
+                f"{cnt}/{cnt_all} {round(100*cnt/cnt_all,2)}% {round(time.time()-start_time,2)}s"
+            )
+
+            # First trial
+            try:
+                handle = Entrez.efetch(
+                    db="nucleotide", id=acc_string, rettype="gb", retmode="xml"
+                )
+            except:
+                # Second trial
+                Mes("Requesting again...")
+                try:
+                    sleep(10)
+                    handle = Entrez.efetch(
+                        db="nucleotide", id=acc_string, rettype="gb", retmode="xml"
+                    )
+                except:
+                    # Third trial
+                    try:
+                        sleep(100)
+                        handle = Entrez.efetch(
+                            db="nucleotide", id=acc_string, rettype="gb", retmode="xml"
+                        )
+                    # Last trial
+                    except:
+                        Mes(
+                            "Last requesting due to connection error, will be take long (15 min)..."
+                        )
+                        sleep(900)
+                        handle = Entrez.efetch(
+                            db="nucleotide", id=acc_string, rettype="gb", retmode="xml"
+                        )
+
+            # Read parsed data
+            pre_record = handle.read()
+            json_record = xml2dict(pre_record)
+            tmp_record_list = []
+
+            # If only one result available
+            if type(json_record["GBSet"]["GBSeq"]) is dict:
+                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
+
+            if len(list_acc[i * cut :]) != 1:
+                for record in json_record["GBSet"]["GBSeq"]:
+                    record_list.append(record)
+                    tmp_record_list.append(record)
+            else:
+                record = json_record["GBSet"]["GBSeq"]
+                record_list.append(record)
+                tmp_record_list.append(record)
+
+            # Intermediate save for current data
+            try:
+                with open(f"{path_tmp}/{i}", "wb") as f:
+                    pickle.dump(tmp_record_list, f)
+            except:
+                Mes("Saving Error")
+                raise Exception
+
+    with open(out, "w") as fp:
+        json_term = json.dump(record_list, fp, indent=4)
+
+    # If success, remove tmp files
+    tmp_file_list = [file for file in os.listdir(f"{path_tmp}")]
+    for file in tmp_file_list:
+        os.remove(f"{path_tmp}/{file}")
+
+
+# Get accession list from GenBank
+def ncbi_getacc(email, term, out):
+
+    Entrez.email = email
 
     # Get all ID
     handle = Entrez.esearch(db="Nucleotide", term=term)
     record = Entrez.read(handle)
-    # Mes(str(record))
 
     sleep(5)
     handle = Entrez.esearch(
@@ -71,320 +251,14 @@ def NCBI_getacc(Email, term, out):
     )
     record = Entrez.read(handle)
 
-    list_ID = record["IdList"]
+    list_acc = record["IdList"]
 
-    Mes(f"Number of IDs: {len(list_ID)}")
+    Mes(f"Number of IDs: {len(list_acc)}")
 
-    return list_ID
-
-
-# GenBank, download all by given term
-def NCBI_Download(Email, term, out):
-
-    path_tmp = "tmp"
-
-    def xml2dict(record):
-        dict_type = xmltodict.parse(record)
-        json_type = json.dumps(dict_type, indent=4)
-        dict2_type = json.loads(json_type)
-        return dict2_type
-
-    Entrez.email = Email
-
-    # Get all ID
-    handle = Entrez.esearch(db="Nucleotide", term=term)
-    record = Entrez.read(handle)
-    # Mes(str(record))
-
-    handle = Entrez.esearch(db="Nucleotide", term=term, retmax=record["Count"])
-    record = Entrez.read(handle)
-
-    list_ID = record["IdList"]
-
-    # print(len(list_ID))
-
-    Mes(f"Number of IDs: {len(list_ID)}")
-
-    # Parse
-    cnt = 0
-    cut = 50  # parse by 50 sequences
-    cnt_all = len(list_ID)
-
-    start_time = time.time()
-
-    record_list = []
-
-    for i in range(int((len(list_ID) - 1) / cut) + 1):
-
-        # Deal with saved files
-        if str(i) in [file for file in os.listdir(f"./{path_tmp}")]:
-            Mes("Found saved")
-            cnt += cut
-            with open(f"./{path_tmp}/{i}", "rb") as fp:
-                data = pickle.load(fp)
-                for record in data:
-                    record_list.append(record)
-
-        # last chunk
-        elif i * cut + cut > len(list_ID):
-            ID_string = ",".join(list_ID[i * cut :])
-            sleep(0.3)
-            cnt += len(list_ID[i * cut :])
-            Mes(
-                f"{cnt}/{cnt_all} {round(100*cnt/cnt_all,2)}% {round(time.time()-start_time,2)}s"
-            )
-
-            try:
-                handle = Entrez.efetch(
-                    db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                )
-            except:
-                Mes("Requesting again...")
-                try:
-                    sleep(10)
-                    handle = Entrez.efetch(
-                        db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                    )
-                except:
-                    try:
-                        sleep(100)
-                        handle = Entrez.efetch(
-                            db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                        )
-                    except:
-                        Mes(
-                            "Last requesting due to connection error, will be take long (15 min)..."
-                        )
-                        sleep(900)
-                        handle = Entrez.efetch(
-                            db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                        )
-
-            pre_record = handle.read()
-            json_record = xml2dict(pre_record)
-            tmp_record_list = []
-
-            # If only one result available
-            if type(json_record["GBSet"]["GBSeq"]) is dict:
-                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
-
-            if len(list_ID[i * cut :]) != 1:
-                for record in json_record["GBSet"]["GBSeq"]:
-                    record_list.append(record)
-                    tmp_record_list.append(record)
-            else:
-                record = json_record["GBSet"]["GBSeq"]
-                record_list.append(record)
-                tmp_record_list.append(record)
-
-            try:
-                with open(f"./{path_tmp}/{i}", "wb") as f:
-                    pickle.dump(tmp_record_list, f)
-            except:
-                Mes("Saving Error")
-                raise Exception
-
-        # non last chunk
-        else:
-            Mes(i)
-            ID_string = ",".join(list_ID[i * cut : i * cut + cut])
-            sleep(0.3)
-            cnt += cut
-            Mes(f"{cnt}/{cnt_all} {100*cnt/cnt_all}% {time.time()-start_time}s")
-
-            try:
-                handle = Entrez.efetch(
-                    db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                )
-            except:
-                Mes("Requesting again...")
-                try:
-                    sleep(10)
-                    handle = Entrez.efetch(
-                        db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                    )
-                except:
-                    try:
-                        sleep(100)
-                        handle = Entrez.efetch(
-                            db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                        )
-                    except:
-                        Mes(
-                            "Last requesting due to connection error, will be take long (15 min)..."
-                        )
-                        sleep(900)
-                        handle = Entrez.efetch(
-                            db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                        )
-
-            pre_record = handle.read()
-            json_record = xml2dict(pre_record)
-            tmp_record_list = []
-
-            # If only one result available
-            if type(json_record["GBSet"]["GBSeq"]) is dict:
-                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
-
-            if len(list_ID[i * cut :]) != 1:
-                for record in json_record["GBSet"]["GBSeq"]:
-                    record_list.append(record)
-                    tmp_record_list.append(record)
-            else:
-                record = json_record["GBSet"]["GBSeq"]
-                record_list.append(record)
-                tmp_record_list.append(record)
-
-            try:
-                with open(f"./{path_tmp}/{i}", "wb") as f:
-                    pickle.dump(tmp_record_list, f)
-            except:
-                Mes("Saving Error")
-                raise Exception
-
-    with open(out, "w") as fp:
-        json_term = json.dump(record_list, fp, indent=4)
-
-    # If success, remove tmp files
-    tmp_file_list = [file for file in os.listdir(f"./{path_tmp}/")]
-    for file in tmp_file_list:
-        os.remove(f"./{path_tmp}/{file}")
+    return list_acc
 
 
-def NCBI_Downloadbyacclist(Email, list_ID, out):
-
-    path_tmp = "tmp"
-
-    # print(list_ID)
-
-    def xml2dict(record):
-        dict_type = xmltodict.parse(record)
-        json_type = json.dumps(dict_type, indent=4)
-        dict2_type = json.loads(json_type)
-        return dict2_type
-
-    Entrez.email = Email
-
-    Mes(f"Number of IDs: {len(list_ID)}")
-
-    # Parse
-    cnt = 0
-    cut = 50  # parse by 50 sequences
-    cnt_all = len(list_ID)
-
-    start_time = time.time()
-
-    record_list = []
-
-    for i in range(int((len(list_ID) - 1) / cut) + 1):
-
-        # last chunk
-        if i * cut + cut > len(list_ID):
-            # Mes(i)
-            ID_string = ",".join(list_ID[i * cut :])
-            sleep(0.3)
-            cnt += len(list_ID[i * cut :])
-            Mes(f"{cnt}/{cnt_all} {100*cnt/cnt_all}% {time.time()-start_time}s")
-
-            try:
-                handle = Entrez.efetch(
-                    db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                )
-            except:  # Retry
-                Mes("Requesting again...")
-                try:
-                    sleep(10)
-                    handle = Entrez.efetch(
-                        db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                    )
-                except:
-                    sleep(100)
-                    handle = Entrez.efetch(
-                        db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                    )
-
-            pre_record = handle.read()
-            json_record = xml2dict(pre_record)
-            tmp_record_list = []
-
-            # If only one result available
-            if type(json_record["GBSet"]["GBSeq"]) is dict:
-                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
-
-            if len(list_ID[i * cut :]) != 1:
-                for record in json_record["GBSet"]["GBSeq"]:
-                    record_list.append(record)
-                    tmp_record_list.append(record)
-            else:
-                record = json_record["GBSet"]["GBSeq"]
-                record_list.append(record)
-                tmp_record_list.append(record)
-
-            try:
-                with open(f"./{path_tmp}/{i}", "wb") as f:
-                    pickle.dump(tmp_record_list, f)
-            except:
-                Mes("Saving Error")
-                raise Exception
-
-        # non last chunk
-        else:
-            # Mes(i)
-            ID_string = ",".join(list_ID[i * cut : i * cut + cut])
-            sleep(0.3)
-            cnt += cut
-            Mes(f"{cnt}/{cnt_all} {100*cnt/cnt_all}% {time.time()-start_time}s")
-
-            try:
-                handle = Entrez.efetch(
-                    db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                )
-            except:  # Retry
-                Mes("Requesting again...")
-                try:
-                    sleep(10)
-                    handle = Entrez.efetch(
-                        db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                    )
-                except:
-                    sleep(100)
-                    handle = Entrez.efetch(
-                        db="nucleotide", id=ID_string, rettype="gb", retmode="xml"
-                    )
-
-            pre_record = handle.read()
-            json_record = xml2dict(pre_record)
-            tmp_record_list = []
-
-            # If only one result available
-            if type(json_record["GBSet"]["GBSeq"]) is dict:
-                json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
-
-            if len(list_ID[i * cut :]) != 1:
-                for record in json_record["GBSet"]["GBSeq"]:
-                    record_list.append(record)
-                    tmp_record_list.append(record)
-            else:
-                record = json_record["GBSet"]["GBSeq"]
-                record_list.append(record)
-                tmp_record_list.append(record)
-
-            try:
-                with open(f"./{path_tmp}/{i}", "wb") as f:
-                    pickle.dump(tmp_record_list, f)
-            except:
-                Mes("Saving Error")
-                raise Exception
-
-    with open(out, "w") as fp:
-        json_term = json.dump(record_list, fp, indent=4)
-
-    # If success, remove tmp files
-    tmp_file_list = [file for file in os.listdir(f"./{path_tmp}/")]
-    for file in tmp_file_list:
-        os.remove(f"./{path_tmp}/{file}")
-
-
+# GenBank record parser
 # get wanted object from iterating dictionary
 # if wanted object is in value of label
 def retrieve(input_dict, obj, filter_list=[], add=" = ", default=""):
@@ -414,6 +288,7 @@ def retrieve(input_dict, obj, filter_list=[], add=" = ", default=""):
         return add.join(" = ")
 
 
+# GenBank record parser
 # get wanted object from iterating dictionary
 # if wanted object and label is in parellel location
 def retrieve_parallel(input_dict, label, label_value, obj):
@@ -456,6 +331,7 @@ def format_list(input_list, filter_list=[], add=", ", default=""):
         return add.join(out_list)
 
 
+# json to xlsx for GenBank json file
 def jsontoxlsx(json_in, xlsx, max_len=0):
     with open(json_in) as json_file:
         json_data = json.load(json_file)
@@ -485,9 +361,10 @@ def jsontoxlsx(json_in, xlsx, max_len=0):
     df = pd.DataFrame(dict_all)
 
     with pd.ExcelWriter(xlsx) as writer:
-        df.to_excel(writer, sheet_name="Sheet 1")
+        df.to_excel(writer, index=False, sheet_name="Sheet 1")
 
 
+# json to xlsx for universal json files
 def uni_jsontoxlsx(json_in, xlsx):
     with open(json_in) as json_file:
         json_data = json.load(json_file)
@@ -509,7 +386,7 @@ def uni_jsontoxlsx(json_in, xlsx):
     df = pd.DataFrame(dict_all)
 
     with pd.ExcelWriter(xlsx) as writer:
-        df.to_excel(writer, sheet_name="Sheet 1")
+        df.to_excel(writer, index=False, sheet_name="Sheet 1")
 
 
 def jsontransform(json_in, out):  # transform to form easy to use
@@ -842,25 +719,31 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     json_temp = []
 
+    # Transform to output format
     for record in json_data:
-        if "GBSeq_sequence" in record:  # remove data without sequence
-            dict_temp = {
-                "acc": "",
-                "length": "",
-                "seqname": "",
-                "spname": "",
-                "uploader": [],
-                "journal": [],
-                "department": [],
-                "title": "",
-                "voucher": "",
-                "type_material": "",
-                "strain": "",
-                "culture_collection": "",
-                "note": "",
-                "upload_date": "",
-                "seq": "",
-            }
+
+        dict_temp = {
+            "acc": "",
+            "length": "",
+            "seqname": "",
+            "spname": "",
+            "uploader": [],
+            "journal": [],
+            "department": [],
+            "title": "",
+            "voucher": "",
+            "type_material": "",
+            "strain": "",
+            "culture_collection": "",
+            "note": "",
+            "upload_date": "",
+            "seq": "",
+        }
+
+        if (
+            "GBSeq_sequence" in record or "GBSeq_feature-table" in record
+        ):  # remove data without sequence
+
             dict_temp["acc"] = record["GBSeq_locus"]
             dict_temp["length"] = record["GBSeq_length"]
             dict_temp["seqname"] = record["GBSeq_definition"]
@@ -869,9 +752,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["journal"], dict_temp["department"] = Get_journal(record)
             dict_temp["title"] = Get_title(record)
             dict_temp["upload_date"] = record["GBSeq_update-date"]  # GBSeq_create-date
-            dict_temp["seq"] = record["GBSeq_sequence"]
             dict_temp["voucher"] = Get_voucher(record)
-
             dict_temp["type_material"] = Get_type_material(record)
             dict_temp["strain"] = Get_strain(record)
             dict_temp["culture_collection"] = Get_culture_collection(record)
@@ -881,46 +762,13 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["primer"] = classification(record["GBSeq_definition"])
             json_temp.append(dict_temp)
 
-        elif "GBSeq_feature-table" in record:  # genomic data
-
-            dict_temp = {
-                "acc": "",
-                "length": "",
-                "seqname": "",
-                "spname": "",
-                "uploader": [],
-                "journal": [],
-                "department": [],
-                "title": "",
-                "voucher": "",
-                "type_material": "",
-                "strain": "",
-                "culture_collection": "",
-                "note": "",
-                "upload_date": "",
-                "seq": "",
-            }
-            dict_temp["acc"] = record["GBSeq_locus"]
-            dict_temp["length"] = record["GBSeq_length"]
-            dict_temp["seqname"] = record["GBSeq_definition"]
-            dict_temp["spname"] = record["GBSeq_organism"]
-            dict_temp["uploader"] = Get_author(record)
-            dict_temp["journal"], dict_temp["department"] = Get_journal(record)
-            dict_temp["title"] = Get_title(record)
-            dict_temp["upload_date"] = record["GBSeq_update-date"]  # GBSeq_create-date
-            dict_temp["seq"] = "Genomic"
-            dict_temp["voucher"] = Get_voucher(record)
-
-            dict_temp["type_material"] = Get_type_material(record)
-            dict_temp["strain"] = Get_strain(record)
-            dict_temp["culture_collection"] = Get_culture_collection(record)
-            dict_temp["note"] = Get_note(record)
-            dict_temp["isolate"] = Get_isolate(record)
-
-            dict_temp["primer"] = classification(record["GBSeq_definition"])
-            json_temp.append(dict_temp)
+            if "GBSeq_sequence" in record:  # normal sequence data
+                dict_temp["seq"] = record["GBSeq_sequence"]
+            elif "GBSeq_feature-table" in record:  # genomic data
+                dict_temp["seq"] = "Genomic"
 
         else:
+            Mes("Could not found GBSeq-sequence or GBSeq_feature-table from record")
             print_json(record)
             raise Exception
 
@@ -928,7 +776,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
         json_term = json.dump(json_temp, fp, indent=4)
 
 
-def getseq(DB, gene, out, additional_terms=[]):
+def getseq(DB, out, additional_terms=[]):
 
     # terms are chosen in definition
     # additional terms are chosen in all parts
@@ -1014,13 +862,6 @@ def getseq_without(DB, out, additional_terms=[], exceptional_terms=[]):
 
     with open(outjson, "w") as fp:
         json_term = json.dump(temp_list, fp, indent=4)
-
-
-def delcomma(string):
-    if string.endswith(","):
-        return string[:-1]
-    else:
-        return string
 
 
 def seqrecordtodict(Seqrecord):
@@ -1178,7 +1019,7 @@ def BLAST_downloader(fasta_in, blast_out):
         os.system(
             f"blastn -out {blast_out}_{i}.xml -outfmt 5 -query temp.fasta -db /data/cwseo/BLAST_DB/public/nt -evalue 0.1 -num_threads 2"
         )
-        # blastn_cline = NcbiblastnCommandline(query="temp.fasta",db="nr",evalue=0.1,outfmt=7,out=f"{blast_out}_{i}.xml")
+        # blastn_cline = ncbiblastnCommandline(query="temp.fasta",db="nr",evalue=0.1,outfmt=7,out=f"{blast_out}_{i}.xml")
         # print(blastn_cline)
         # blastn_cline()
 
@@ -1190,7 +1031,7 @@ def Build_DB(DB_fasta, out):
 
 
 def BLASTn(query, db, evalue, out):
-    blastn_cline = NcbiblastnCommandline(
+    blastn_cline = ncbiblastnCommandline(
         query=query, db=db, evalue=evalue, outfmt=7, out=out
     )
     Mes("BLAST: " + str(blastn_cline))
@@ -1238,26 +1079,26 @@ def discrete_seqs(fasta_file):
     BLASTn("temp_query.fasta", "temp_db", evalue=10, out="temp_blastout")
 
     # query
-    list_id_out = [fasta_list[0]]
+    list_acc_out = [fasta_list[0]]
 
     # leftovers for next iteration
-    list_id = get_ids2("temp_blastout")
+    list_acc = get_ids2("temp_blastout")
 
     temp_fasta_list = []
 
-    if len(list_id) > 2:
+    if len(list_acc) > 2:
 
         # Save selected fasta to temp
         for fasta in fasta_list:
-            for fasta_id in list_id:
+            for fasta_id in list_acc:
                 if fasta_id in fasta.description:
                     temp_fasta_list.append(fasta)
 
         SeqIO.write(temp_fasta_list, "temp_db.fasta", "fasta")
-        return list_id_out + discrete_seqs("temp_db.fasta")
+        return list_acc_out + discrete_seqs("temp_db.fasta")
 
     else:
-        return list_id_out
+        return list_acc_out
 
 
 def get_blast_result(blast_result):
@@ -1269,7 +1110,7 @@ def get_ids2(blast_result):
 
     cutoff = 10
 
-    list_id = []
+    list_acc = []
 
     file = open(blast_result, "r")
     lines = file.readlines()
@@ -1278,9 +1119,9 @@ def get_ids2(blast_result):
         if not (line.startswith("#")):
             if float(line.split("\t")[2]) < 100 - cutoff:
                 # print(line)
-                list_id.append(str(line.split("\t")[1]))
+                list_acc.append(str(line.split("\t")[1]))
 
-    return list_id
+    return list_acc
 
 
 # for web BLAST result
@@ -1289,23 +1130,23 @@ def get_ids(file_xml):
     file = open(file_xml, "r")
     lines = file.readlines()
 
-    list_id_num = []
-    list_id = []
+    list_acc_num = []
+    list_acc = []
 
     for num, line in enumerate(lines):
         if "<Hit_id>" in line:
-            list_id_num.append(num)
+            list_acc_num.append(num)
 
-    for i in range(len(list_id_num)):
+    for i in range(len(list_acc_num)):
         try:
             flag = 0
-            for line in lines[list_id_num[i] : list_id_num[i + 1]]:
+            for line in lines[list_acc_num[i] : list_acc_num[i + 1]]:
                 if "Penicillium" in line or "penicillium" in line:
                     flag = 1
 
             if flag == 0:
-                list_id.append(
-                    lines[list_id_num[i]]
+                list_acc.append(
+                    lines[list_acc_num[i]]
                     .split("<Hit_id>")[1]
                     .split("</Hit_id>")[0]
                     .split("|")[1]
@@ -1313,13 +1154,13 @@ def get_ids(file_xml):
 
         except:
             flag = 0
-            for line in lines[list_id_num[i] :]:
+            for line in lines[list_acc_num[i] :]:
                 if "Penicillium" in line or "penicillium" in line:
                     flag = 1
 
             if flag == 0:
-                list_id.append(
-                    lines[list_id_num[i]]
+                list_acc.append(
+                    lines[list_acc_num[i]]
                     .split("<Hit_id>")[1]
                     .split("</Hit_id>")[0]
                     .split("|")[1]
@@ -1327,13 +1168,13 @@ def get_ids(file_xml):
 
     for line in lines:
         if "<Hit_id>" in line:
-            list_id.append(
+            list_acc.append(
                 line.split("<Hit_id>")[1].split("</Hit_id>")[0].split("|")[1]
             )
 
     file.close()
-    print(len(list_id))
-    return list_id
+    print(len(list_acc))
+    return list_acc
 
 
 # get list of acc in transformed json
@@ -1387,11 +1228,9 @@ def json_merge(json_list, out):
 
 
 def gene_seperator(classified_genes, path_out, email):
-    # For each genes, BLAST against NCBI DB, getoutput, reduction by local BLAST
+    # For each genes, BLAST against ncbi DB, getoutput, reduction by local BLAST
     for gene in classified_genes:
         if gene != "others" and gene != "genomic":
-
-            print("Checkpoint 1")
             set_id = set()
             print(gene)
             list_foronlineblast = discrete_seqs(path_out + "_" + gene + ".fasta")
@@ -1400,23 +1239,18 @@ def gene_seperator(classified_genes, path_out, email):
                 f"onlineblastquery_{gene}.fasta", f"outonlineblast_{gene}.out"
             )
 
-            print("Checkpoint 2")
             for blastout in [
                 file
                 for file in os.listdir(os.getcwd())
                 if file.startswith(f"outonlineblast_{gene}.out")
             ]:
-                list_id = get_ids(blastout)
-                set_id = set_id | set(list_id)
+                list_acc = get_ids(blastout)
+                set_id = set_id | set(list_acc)
 
-            print("Checkpoint 3")
-            list_ID = list(set_id)
-            print(len(list_ID))
+            list_acc = list(set_id)
 
-            print("Checkpoint 4")
-
-            if len(list_ID) > 0:
-                NCBI_Downloadbyacclist(email, list_ID, f"outonlineblast_{gene}.json")
+            if len(list_acc) > 0:
+                ncbi_Downloadbyacclist(email, list_acc, f"outonlineblast_{gene}.json")
                 getseq_without(
                     f"outonlineblast_{gene}.json",
                     f"Byblast_{gene}",
@@ -1446,7 +1280,6 @@ def gene_seperator(classified_genes, path_out, email):
                 else:
                     non_detected_acc.append(acc)
 
-            print(non_detected_acc)
             check = json_pick(
                 f"Byblast_transformed_{gene}.json",
                 non_detected_acc,
@@ -1454,3 +1287,97 @@ def gene_seperator(classified_genes, path_out, email):
             )
             if check == True:
                 uni_jsontoxlsx(f"Putative_{gene}.json", f"Putative_{gene}.xlsx")
+
+
+# save download results to
+def saver(path_work, name_out, max_len, additional_term):
+    # Turn downloaded json to xlsx
+    jsontoxlsx(f"{path_work}/{name_out}.json", f"{path_work}/{name_out}.xlsx", max_len)
+
+    # Get sequence file with additional term
+    getseq(
+        f"{path_work}/{name_out}.json",
+        f"{os.getcwd()}/{name_out}/{name_out}",
+        additional_terms=additional_term,
+    )
+
+    # Transform json into user friendly form
+    jsontransform(
+        f"{os.getcwd()}/{name_out}/{name_out}.json",
+        f"{os.getcwd()}/{name_out}/{name_out}_transformed.json",
+    )
+
+    # Transform json to excel form
+    jsontoxlsx(
+        f"{os.getcwd()}/{name_out}/{name_out}.json",
+        f"{os.getcwd()}/{name_out}/{name_out}.xlsx",
+        max_len,
+    )
+
+    # Transform user friendly json to excel form
+    uni_jsontoxlsx(
+        f"{os.getcwd()}/{name_out}/{name_out}_transformed.json",
+        f"{os.getcwd()}/{name_out}/{name_out}_transformed.xlsx",
+    )
+
+    # Parse finalized data
+    term_acc = get_acc(f"{os.getcwd()}/{name_out}/{name_out}_transformed.json")
+
+    Mes(f"Total {len(term_acc)} found")
+    classified_genes = classifier(
+        f"{os.getcwd()}/{name_out}/{name_out}_transformed.json",
+        f"{os.getcwd()}/{name_out}/{name_out}",
+    )
+
+
+# GenBank, download all by given term
+def ncbi_download(
+    email, genus_term, additional_term, name_out, path_work, path_tmp, max_len
+):
+
+    # select outgroup location
+    path_localgb = f"{path_work}/{name_out}.json"
+    path_localgb_xlsx = f"{path_work}/{name_out}.xlsx"
+
+    # Setup email
+    Entrez.email = email
+
+    # Get all ID for given term
+    handle = Entrez.esearch(db="Nucleotide", term=genus_term)
+    record = Entrez.read(handle)
+
+    # Get all GenBank records
+    handle = Entrez.esearch(db="Nucleotide", term=genus_term, retmax=record["Count"])
+    record = Entrez.read(handle)
+
+    # Parse number of records
+    list_acc = record["IdList"]
+
+    Mes(f"Number of IDs: {len(list_acc)}")
+
+    # Download GenBank records
+    downloader(list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json")
+    # save files
+    saver(
+        path_work=path_work,
+        name_out=name_out,
+        max_len=max_len,
+        additional_term=additional_term,
+    )
+
+
+# Download by given list of accession
+def ncbi_downloadbyacclist(email, list_acc, name_out, path_work, path_tmp, max_len):
+
+    Entrez.email = email
+
+    Mes(f"Number of IDs: {len(list_acc)}")
+    # Download GenBank records
+    downloader(list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json")
+    # save files
+    saver(
+        path_work=path_work,
+        name_out=name_out,
+        max_len=max_len,
+        additional_term=[],
+    )
