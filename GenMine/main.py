@@ -23,6 +23,7 @@ def main():
     if args.email != None:
         email = args.email
     else:
+        email = None
         print("No emails accepted, this might be bad for NCBI connection")
 
     if args.accession != None:

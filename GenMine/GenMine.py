@@ -145,12 +145,7 @@ def downloader(list_acc, path_tmp, out, cut=50):
             if type(json_record["GBSet"]["GBSeq"]) is dict:
                 json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
 
-            if len(list_acc[i * cut :]) != 1:
-                for record in json_record["GBSet"]["GBSeq"]:
-                    record_list.append(record)
-                    tmp_record_list.append(record)
-            else:
-                record = json_record["GBSet"]["GBSeq"]
+            for record in json_record["GBSet"]["GBSeq"]:
                 record_list.append(record)
                 tmp_record_list.append(record)
 
@@ -210,16 +205,10 @@ def downloader(list_acc, path_tmp, out, cut=50):
             if type(json_record["GBSet"]["GBSeq"]) is dict:
                 json_record["GBSet"]["GBSeq"] = [json_record["GBSet"]["GBSeq"]]
 
-            if len(list_acc[i * cut :]) != 1:
-                for record in json_record["GBSet"]["GBSeq"]:
-                    record_list.append(record)
-                    tmp_record_list.append(record)
-            else:
-                record = json_record["GBSet"]["GBSeq"]
+            for record in json_record["GBSet"]["GBSeq"]:
                 record_list.append(record)
                 tmp_record_list.append(record)
 
-            # Intermediate save for current data
             try:
                 with open(f"{path_tmp}/{i}", "wb") as f:
                     pickle.dump(tmp_record_list, f)

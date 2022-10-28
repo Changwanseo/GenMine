@@ -6,3 +6,5 @@ dist/
 *.xlsx
 *.json
 *.fasta
+input.txt
+log.txt

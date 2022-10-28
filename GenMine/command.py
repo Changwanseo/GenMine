@@ -11,7 +11,9 @@ class CommandParser:
 
     def get_args(self) -> argparse.Namespace:
 
-        self.parser.add_argument("--email", "-e", help="entrez email", type=str)
+        self.parser.add_argument(
+            "--email", "-e", help="entrez email", type=str, required=True
+        )
         self.parser.add_argument(
             "--genus", "-g", nargs="*", help="genus to find", type=str
         )
