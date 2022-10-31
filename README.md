@@ -10,7 +10,9 @@ Chang Wan Seo, Sung Hyun Kim, Young Woon Lim & Myung Soo Park (2022) Re-Identifi
 
 https://www.tandfonline.com/doi/full/10.1080/12298093.2022.2116816
  
- 
+# Knwon issues
+* Currently, GenMine ends with error when no records exists with given arguments. We will make it safer later.
+
  
 ## Install
 * pip
