@@ -32,7 +32,7 @@ pip install GenMine
 * If problem occurs please uninstall then install with specifying versions
 ```
 pip uninstall GenMine
-pip install GenMine==1.0.3.0
+pip install GenMine==1.0.3.1
 ```
 
 ## Usage
