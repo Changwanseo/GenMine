@@ -12,35 +12,39 @@ class CommandParser:
     def get_args(self) -> argparse.Namespace:
 
         self.parser.add_argument(
-            "--email", "-e", help="entrez email", type=str, required=True
+            "--email", "-e", help="Entrez Email, required", type=str, required=True
         )
         self.parser.add_argument(
-            "--genus", "-g", nargs="*", help="genus to find", type=str
+            "--genus", "-g", nargs="*", help="List of genus to find | File with genera in each line", type=str
+        )
+        self.parser.add_argument(
+            "--accession", "-c", nargs="*", help="List of accessions to get | File with accessions in each line", type=str
         )
         self.parser.add_argument(
             "--additional", "-a", nargs="*", help="additional terms", type=str
         )
-        self.parser.add_argument(
-            "--accession", "-c", help="Accession list file to get", type=str
-        )
-        self.parser.add_argument("--out", "-o", help="out path", type=str)
+        self.parser.add_argument("--out", "-o", help="Out file path. Use previous result directory name for continue run", type=str)
         self.parser.add_argument(
             "--max",
             "-m",
-            help="maximum length of sequence to search, in order to remove genomic sequences",
+            help="Maximum length of sequence to search, in order to remove genomic sequences",
             type=int,
         )
+        
+        '''
         self.parser.add_argument(
             "--start",
             "-s",
-            help="starting date of finding records, as term of YYYY-MM-DD",
+            help="Starting date of finding records, as term of YYYY-MM-DD",
             type=str,
         )
         self.parser.add_argument(
             "--end",
             "-f",
-            help="final date of finding records, as term of YYYY-MM-DD",
+            help="Final date of finding records, as term of YYYY-MM-DD",
             type=str,
         )
+        '''
+
 
         return self.parser.parse_args()

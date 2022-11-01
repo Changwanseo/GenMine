@@ -81,6 +81,10 @@ def downloader(list_acc, path_tmp, out, cut=50):
 
     record_list = []
 
+    if cnt_all == 0:
+        Mes("No accessions available in GenBank. Please check your input")
+        return -1
+
     # Iterating with 50 items
     for i in range(int((len(list_acc) - 1) / cut) + 1):
 
@@ -223,6 +227,8 @@ def downloader(list_acc, path_tmp, out, cut=50):
     tmp_file_list = [file for file in os.listdir(f"{path_tmp}")]
     for file in tmp_file_list:
         os.remove(f"{path_tmp}/{file}")
+
+    return 1
 
 
 # Get accession list from GenBank
@@ -1320,6 +1326,7 @@ def saver(path_work, name_out, max_len, additional_term):
 
 
 # GenBank, download all by given term
+# genus term is space seperated string of genus (eg. Penicillium Apiospora Alternaria )
 def ncbi_download(
     email, genus_term, additional_term, name_out, path_work, path_tmp, max_len
 ):
@@ -1345,14 +1352,16 @@ def ncbi_download(
     Mes(f"Number of IDs: {len(list_acc)}")
 
     # Download GenBank records
-    downloader(list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json")
-    # save files
-    saver(
-        path_work=path_work,
-        name_out=name_out,
-        max_len=max_len,
-        additional_term=additional_term,
-    )
+    status = downloader(list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json")
+    
+    if not(status == -1):
+        # save files
+        saver(
+            path_work=path_work,
+            name_out=name_out,
+            max_len=max_len,
+            additional_term=additional_term,
+        )
 
 
 # Download by given list of accession
@@ -1362,11 +1371,13 @@ def ncbi_downloadbyacclist(email, list_acc, name_out, path_work, path_tmp, max_l
 
     Mes(f"Number of IDs: {len(list_acc)}")
     # Download GenBank records
-    downloader(list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json")
-    # save files
-    saver(
-        path_work=path_work,
-        name_out=name_out,
-        max_len=max_len,
-        additional_term=[],
-    )
+    status = downloader(list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json")
+    
+    if not(status == -1):
+        # save files
+        saver(
+            path_work=path_work,
+            name_out=name_out,
+            max_len=max_len,
+            additional_term=[],
+        )

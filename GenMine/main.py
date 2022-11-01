@@ -1,7 +1,7 @@
 def main():
 
     from . import GenMine as Gen
-    from lib.command import CommandParser
+    from GenMine.command import CommandParser
     from datetime import datetime, date
 
     import os
@@ -11,8 +11,8 @@ def main():
     # Managing arguments
 
     # default setup
-    date_start = -1
-    date_end = -1
+    #date_start = -1
+    #date_end = -1
     genus_term = None
     accession_file = None
     max_len = 5000  # Excluding too long (genomic) Sequences
@@ -24,99 +24,136 @@ def main():
         email = args.email
     else:
         email = None
-        print("No emails accepted, this might be bad for NCBI connection")
+        print("Emails are mandatory for safe NCBI connection")
+        raise Exception
 
-    if args.accession != None:
-        accession_file = args.accession
-    elif args.genus != None:
-        genus_term = " ".join(args.genus)
-    else:
+    # Get accession inputs
+    accession_list = []
+    if not(args.accession is None):
+        if type(args.accession) is str: # For only one input
+            args.accession = [args.accession]
+        for acc in args.accession:
+            if os.path.isfile(acc):
+                try:
+                    with open(acc, "r") as f:
+                        accession_list += [x.strip() for x in f.readlines()]
+                except:
+                    print(f"{acc} was recognized as input file, but cannot be parsed")
+                    print(f"The format of accession input file should be one accession in each line")
+                    raise Exception
+            else:
+                accession_list.append(acc)
+
+    
+    # Get genus inputs
+    genus_list = []
+    if not(args.genus is None):
+        if type(args.genus) is str:
+            args.genus = [args.genus] 
+        for acc in args.genus:
+            if os.path.isfile(acc):
+                try:
+                    with open(acc, "r") as f:
+                        genus_list += [x.strip() for x in f.readlines()]
+                except:
+                    print(f"{acc} was recognized as input file, but cannot be parsed")
+                    print(f"The format of genus input file should be one genus in each line")
+                    raise Exception
+            else:
+                genus_list.append(acc)
+
+    # Abort when no inputs available
+    if len(accession_list) == 0 and len(genus_list) == 0:
         print("No genus term nor accession numbers inserted. Aborted")
         raise Exception
 
+    # Get additional terms, such as Korea
     if args.additional != None:
         additional_term = list(args.additional)
 
+    # Get output location
     if args.out != None:
         path_out = args.out
+    else:
+        path_out = None
 
+    # Get maximum sequence length
     if args.max != None:
         max_len = args.max
 
-    if date_start != None:
-        date_start = args.start
-
-    date = date.today().strftime("%Y-%m-%d")
-
-    # make output directory name
-    if not (genus_term is None):
-        name_out = f"{genus_term}"
-    elif not (accession_file is None):
-        name_out = accession_file.replace("\\", "/").split("/")[-1].split(".")[0]
-    else:
-        Gen.Mes("Either genus name nor accession file is needed!")
-        raise Exception
-
-    # working directory
-    path_work = f"{os.getcwd()}/{name_out}"
-
-    # Check with previous run
-    if os.path.isdir(path_work):
-        print("Found previous run. Continue")
-    else:
-        try:
-            os.mkdir(path_work)
-        except:
-            Gen.Mes(
-                f"Could not create output location {path_work}. Check permissions or if previous run file exists"
-            )
-            raise Exception
-
-    # Date options, should be edited
-    """
-    if date_start == -1:
-        date_start = 
-
-    if date_end != None:
-        date_end = args.end
-    """
-
-    # Make temporary directory if not exists
-    path_tmp = f"{path_work}/tmp"
-    try:
-        os.mkdir(path_tmp)
-    except:
-        pass
+    # For time stamp
+    date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
     # Download all seqs from NCBI with genus Penicillium and save into json
-    if not (genus_term is None):
-        Gen.ncbi_download(
-            email=email,
-            genus_term=genus_term,
-            additional_term=additional_term,
-            name_out=name_out,
-            path_work=path_work,
-            path_tmp=path_tmp,
-            max_len=max_len,
-        )
-    elif not (accession_file is None):
-        try:
-            with open(accession_file, "r") as f:
-                accession_list = [l.strip() for l in f.readlines()]
-            Gen.ncbi_downloadbyacclist(
+    if len(genus_list) > 0:
+        for genus in genus_list:
+            # Set output file name appendix
+            name_out = genus
+
+            # Set output location and file name
+            if not(path_out is None):
+                path_work = path_out
+            else:
+                path_work = f"{os.getcwd()}/{name_out}"
+
+            # Set temporary directory location
+            path_tmp = f"{path_work}/tmp"
+
+            # Make running directory if not exists
+            try:
+                os.mkdir(path_work)
+            except:
+                pass
+
+            # Make temporary directory if not exists
+            try:
+                os.mkdir(path_tmp)
+            except:
+                pass
+
+            Gen.ncbi_download(
                 email=email,
-                list_acc=accession_list,
+                genus_term=genus,
+                additional_term=additional_term,
                 name_out=name_out,
                 path_work=path_work,
                 path_tmp=path_tmp,
                 max_len=max_len,
             )
+
+    if len(accession_list) > 0:
+        # Set output file name appendix
+        name_out = date
+
+        # Set output location
+        if not(path_out is None):
+            path_work = path_out
+        else:
+            path_work = f"{os.getcwd()}/{name_out}"
+
+        # Set temporary directory location
+        path_tmp = f"{path_work}/tmp"
+
+        # Make running directory if not exists
+        try:
+            os.mkdir(path_work)
         except:
-            Gen.Mes(f"Accession file {accession_file} is not valid!")
-            raise Exception
-    else:
-        Gen.Mes("Either genus name nor accession file is needed!")
-        raise Exception
+            pass
+
+        # Make temporary directory if not exists
+        try:
+            os.mkdir(path_tmp)
+        except:
+            pass
+
+        Gen.ncbi_downloadbyacclist(
+            email=email,
+            list_acc=accession_list,
+            name_out=name_out,
+            path_work=path_work,
+            path_tmp=path_tmp,
+            max_len=max_len,
+        )
 
     Gen.Mes("GenMine finished. Please site us as below")
     Gen.Mes(
