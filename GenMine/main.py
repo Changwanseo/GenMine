@@ -11,8 +11,8 @@ def main():
     # Managing arguments
 
     # default setup
-    #date_start = -1
-    #date_end = -1
+    # date_start = -1
+    # date_end = -1
     genus_term = None
     accession_file = None
     max_len = 5000  # Excluding too long (genomic) Sequences
@@ -29,8 +29,8 @@ def main():
 
     # Get accession inputs
     accession_list = []
-    if not(args.accession is None):
-        if type(args.accession) is str: # For only one input
+    if not (args.accession is None):
+        if type(args.accession) is str:  # For only one input
             args.accession = [args.accession]
         for acc in args.accession:
             if os.path.isfile(acc):
@@ -39,17 +39,21 @@ def main():
                         accession_list += [x.strip() for x in f.readlines()]
                 except:
                     print(f"{acc} was recognized as input file, but cannot be parsed")
-                    print(f"The format of accession input file should be one accession in each line")
+                    print(
+                        f"The format of accession input file should be one accession in each line"
+                    )
                     raise Exception
             else:
                 accession_list.append(acc)
 
-    
+    # Filter accession_list
+    accession_list = Gen.filter_acc(accession_list, email)
+
     # Get genus inputs
     genus_list = []
-    if not(args.genus is None):
+    if not (args.genus is None):
         if type(args.genus) is str:
-            args.genus = [args.genus] 
+            args.genus = [args.genus]
         for acc in args.genus:
             if os.path.isfile(acc):
                 try:
@@ -57,7 +61,9 @@ def main():
                         genus_list += [x.strip() for x in f.readlines()]
                 except:
                     print(f"{acc} was recognized as input file, but cannot be parsed")
-                    print(f"The format of genus input file should be one genus in each line")
+                    print(
+                        f"The format of genus input file should be one genus in each line"
+                    )
                     raise Exception
             else:
                 genus_list.append(acc)
@@ -91,7 +97,7 @@ def main():
             name_out = genus
 
             # Set output location and file name
-            if not(path_out is None):
+            if not (path_out is None):
                 path_work = path_out
             else:
                 path_work = f"{os.getcwd()}/{name_out}"
@@ -111,6 +117,7 @@ def main():
             except:
                 pass
 
+            # Download data here
             Gen.ncbi_download(
                 email=email,
                 genus_term=genus,
@@ -126,7 +133,7 @@ def main():
         name_out = date
 
         # Set output location
-        if not(path_out is None):
+        if not (path_out is None):
             path_work = path_out
         else:
             path_work = f"{os.getcwd()}/{name_out}"
@@ -146,6 +153,7 @@ def main():
         except:
             pass
 
+        # Download data here
         Gen.ncbi_downloadbyacclist(
             email=email,
             list_acc=accession_list,

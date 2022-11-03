@@ -16,6 +16,7 @@ from itertools import repeat
 import xmltodict
 import os, sys, subprocess
 import random
+import re
 import pickle
 import pandas as pd
 import shutil
@@ -251,6 +252,48 @@ def ncbi_getacc(email, term, out):
     Mes(f"Number of IDs: {len(list_acc)}")
 
     return list_acc
+
+
+# filter accessions by regex
+def filter_acc(acc_list, email) -> list:
+    # We can do this with pythonic expressions, but using iterative way for reporting
+    return_acc_list = []
+    for acc in acc_list:
+        if acc.strip() == "":
+            pass
+        elif re.fullmatch(
+            r"(([A-Z]{1}[0-9]{5})(\.[0-9]{1}){0,1})|(([A-Z]{2}[\_]{0,1}[0-9]{6}){1}([\.][0-9]){0,1})",
+            acc.strip(),
+        ):
+            return_acc_list.append(
+                acc.strip().split(".")[0]
+            )  # Use most recent version of sequence
+        else:
+            Mes(
+                f"[Warning] Accession {acc} does not seems to be valid accession. Passing"
+            )
+
+    # Check if acc are valid by asking to GenBank
+    # to get number of result
+    # get accession_list term
+    Entrez.email = email
+
+    handle = Entrez.esearch(
+        db="Nucleotide",
+        term=" OR ".join([f"{acc}[Nucleotide Accession]" for acc in return_acc_list]),
+        retmax=len(return_acc_list),
+        idtype="acc",
+    )
+    record = Entrez.read(handle)
+    valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
+
+    for acc in return_acc_list:
+        if not (acc in valid_acc_list):
+            Mes(
+                f"GenBank accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
+            )
+
+    return valid_acc_list
 
 
 # GenBank record parser
@@ -1352,9 +1395,11 @@ def ncbi_download(
     Mes(f"Number of IDs: {len(list_acc)}")
 
     # Download GenBank records
-    status = downloader(list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json")
-    
-    if not(status == -1):
+    status = downloader(
+        list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json"
+    )
+
+    if not (status == -1):
         # save files
         saver(
             path_work=path_work,
@@ -1371,9 +1416,11 @@ def ncbi_downloadbyacclist(email, list_acc, name_out, path_work, path_tmp, max_l
 
     Mes(f"Number of IDs: {len(list_acc)}")
     # Download GenBank records
-    status = downloader(list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json")
-    
-    if not(status == -1):
+    status = downloader(
+        list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json"
+    )
+
+    if not (status == -1):
         # save files
         saver(
             path_work=path_work,
