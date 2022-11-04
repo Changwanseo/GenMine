@@ -278,20 +278,23 @@ def filter_acc(acc_list, email) -> list:
     # get accession_list term
     Entrez.email = email
 
-    handle = Entrez.esearch(
-        db="Nucleotide",
-        term=" OR ".join([f"{acc}[Nucleotide Accession]" for acc in return_acc_list]),
-        retmax=len(return_acc_list),
-        idtype="acc",
-    )
-    record = Entrez.read(handle)
-    valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
+    if len(return_acc_list) > 0:
+        handle = Entrez.esearch(
+            db="Nucleotide",
+            term=" OR ".join([f"{acc}[Nucleotide Accession]" for acc in return_acc_list]),
+            retmax=len(return_acc_list),
+            idtype="acc",
+        )
+        record = Entrez.read(handle)
+        valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
 
-    for acc in return_acc_list:
-        if not (acc in valid_acc_list):
-            Mes(
-                f"GenBank accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
-            )
+        for acc in return_acc_list:
+            if not (acc in valid_acc_list):
+                Mes(
+                    f"GenBank accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
+                )
+    else:
+        valid_acc_list = []
 
     return valid_acc_list
 
@@ -1104,117 +1107,6 @@ def classifier(json_in, out):
 
     return new_keys
 
-
-def discrete_seqs(fasta_file):
-
-    Build_DB(fasta_file, "temp_db")
-
-    fasta_list = list(SeqIO.parse(fasta_file, "fasta"))
-
-    # print(fasta_list)
-
-    SeqIO.write(fasta_list[0], "temp_query.fasta", "fasta")
-    BLASTn("temp_query.fasta", "temp_db", evalue=10, out="temp_blastout")
-
-    # query
-    list_acc_out = [fasta_list[0]]
-
-    # leftovers for next iteration
-    list_acc = get_ids2("temp_blastout")
-
-    temp_fasta_list = []
-
-    if len(list_acc) > 2:
-
-        # Save selected fasta to temp
-        for fasta in fasta_list:
-            for fasta_id in list_acc:
-                if fasta_id in fasta.description:
-                    temp_fasta_list.append(fasta)
-
-        SeqIO.write(temp_fasta_list, "temp_db.fasta", "fasta")
-        return list_acc_out + discrete_seqs("temp_db.fasta")
-
-    else:
-        return list_acc_out
-
-
-def get_blast_result(blast_result):
-    pass
-
-
-# for local BLAST result
-def get_ids2(blast_result):
-
-    cutoff = 10
-
-    list_acc = []
-
-    file = open(blast_result, "r")
-    lines = file.readlines()
-
-    for line in lines:
-        if not (line.startswith("#")):
-            if float(line.split("\t")[2]) < 100 - cutoff:
-                # print(line)
-                list_acc.append(str(line.split("\t")[1]))
-
-    return list_acc
-
-
-# for web BLAST result
-def get_ids(file_xml):
-
-    file = open(file_xml, "r")
-    lines = file.readlines()
-
-    list_acc_num = []
-    list_acc = []
-
-    for num, line in enumerate(lines):
-        if "<Hit_id>" in line:
-            list_acc_num.append(num)
-
-    for i in range(len(list_acc_num)):
-        try:
-            flag = 0
-            for line in lines[list_acc_num[i] : list_acc_num[i + 1]]:
-                if "Penicillium" in line or "penicillium" in line:
-                    flag = 1
-
-            if flag == 0:
-                list_acc.append(
-                    lines[list_acc_num[i]]
-                    .split("<Hit_id>")[1]
-                    .split("</Hit_id>")[0]
-                    .split("|")[1]
-                )
-
-        except:
-            flag = 0
-            for line in lines[list_acc_num[i] :]:
-                if "Penicillium" in line or "penicillium" in line:
-                    flag = 1
-
-            if flag == 0:
-                list_acc.append(
-                    lines[list_acc_num[i]]
-                    .split("<Hit_id>")[1]
-                    .split("</Hit_id>")[0]
-                    .split("|")[1]
-                )
-
-    for line in lines:
-        if "<Hit_id>" in line:
-            list_acc.append(
-                line.split("<Hit_id>")[1].split("</Hit_id>")[0].split("|")[1]
-            )
-
-    file.close()
-    print(len(list_acc))
-    return list_acc
-
-
 # get list of acc in transformed json
 def get_acc(json_file):
 
@@ -1265,68 +1157,6 @@ def json_merge(json_list, out):
         json.dump(all_records, fp, indent=4)
 
 
-def gene_seperator(classified_genes, path_out, email):
-    # For each genes, BLAST against ncbi DB, getoutput, reduction by local BLAST
-    for gene in classified_genes:
-        if gene != "others" and gene != "genomic":
-            set_id = set()
-            print(gene)
-            list_foronlineblast = discrete_seqs(path_out + "_" + gene + ".fasta")
-            SeqIO.write(list_foronlineblast, f"onlineblastquery_{gene}.fasta", "fasta")
-            BLAST_downloader(
-                f"onlineblastquery_{gene}.fasta", f"outonlineblast_{gene}.out"
-            )
-
-            for blastout in [
-                file
-                for file in os.listdir(os.getcwd())
-                if file.startswith(f"outonlineblast_{gene}.out")
-            ]:
-                list_acc = get_ids(blastout)
-                set_id = set_id | set(list_acc)
-
-            list_acc = list(set_id)
-
-            if len(list_acc) > 0:
-                ncbi_Downloadbyacclist(email, list_acc, f"outonlineblast_{gene}.json")
-                getseq_without(
-                    f"outonlineblast_{gene}.json",
-                    f"Byblast_{gene}",
-                    additional_terms=additional_terms,
-                    exceptional_terms=[genus_term],
-                )
-                jsontransform(
-                    f"Byblast_{gene}.json", f"Byblast_transformed_{gene}.json"
-                )
-                jsontoxlsx(f"Byblast_{gene}.json", f"Byblast_{gene}.xlsx", 3000)
-                uni_jsontoxlsx(
-                    f"Byblast_transformed_{gene}.json",
-                    f"Byblast_transformed_{gene}.xlsx",
-                )
-
-            else:
-                Mes(f"No accessions available on {gene}")
-
-    for gene in classified_genes:
-        non_detected_acc = []
-        print(gene)
-        if gene != "others" and gene != "genomic":
-            acc_list = get_acc(f"Byblast_transformed_{gene}.json")
-            for acc in acc_list:
-                if acc in korean_acc:
-                    print(acc)
-                else:
-                    non_detected_acc.append(acc)
-
-            check = json_pick(
-                f"Byblast_transformed_{gene}.json",
-                non_detected_acc,
-                f"Putative_{gene}.json",
-            )
-            if check == True:
-                uni_jsontoxlsx(f"Putative_{gene}.json", f"Putative_{gene}.xlsx")
-
-
 # save download results to
 def saver(path_work, name_out, max_len, additional_term):
     # Turn downloaded json to xlsx
@@ -1334,37 +1164,37 @@ def saver(path_work, name_out, max_len, additional_term):
 
     # Get sequence file with additional term
     getseq(
-        f"{path_work}/{name_out}.json",
-        f"{os.getcwd()}/{name_out}/{name_out}",
+        DB=f"{path_work}/{name_out}.json",
+        out=f"{path_work}/{name_out}",
         additional_terms=additional_term,
     )
 
     # Transform json into user friendly form
     jsontransform(
-        f"{os.getcwd()}/{name_out}/{name_out}.json",
-        f"{os.getcwd()}/{name_out}/{name_out}_transformed.json",
+        f"{path_work}/{name_out}.json",
+        f"{path_work}/{name_out}_transformed.json",
     )
 
     # Transform json to excel form
     jsontoxlsx(
-        f"{os.getcwd()}/{name_out}/{name_out}.json",
-        f"{os.getcwd()}/{name_out}/{name_out}.xlsx",
+        f"{path_work}/{name_out}.json",
+        f"{path_work}/{name_out}.xlsx",
         max_len,
     )
 
     # Transform user friendly json to excel form
     uni_jsontoxlsx(
-        f"{os.getcwd()}/{name_out}/{name_out}_transformed.json",
-        f"{os.getcwd()}/{name_out}/{name_out}_transformed.xlsx",
+        f"{path_work}/{name_out}_transformed.json",
+        f"{path_work}/{name_out}_transformed.xlsx",
     )
 
     # Parse finalized data
-    term_acc = get_acc(f"{os.getcwd()}/{name_out}/{name_out}_transformed.json")
+    term_acc = get_acc(f"{path_work}/{name_out}_transformed.json")
 
     Mes(f"Total {len(term_acc)} found")
     classified_genes = classifier(
-        f"{os.getcwd()}/{name_out}/{name_out}_transformed.json",
-        f"{os.getcwd()}/{name_out}/{name_out}",
+        f"{path_work}/{name_out}_transformed.json",
+        f"{path_work}/{name_out}",
     )
 
 
