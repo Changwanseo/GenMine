@@ -1,0 +1,29 @@
+package: 
+  name: genmine
+  version : 1.0.6.0
+
+source:
+  git_url: "https://github.com/Changwanseo/GenMine.git"
+  git_rev: v1.0.6.0
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python
+    - pandas
+    - biopython
+    - openpyxl
+    - xlrd
+    - numpy
+    - xmltodict
+
+  run:
+    - python
+
+
+about:
+  home: "https://github.com/Changwanseo/GenMine"
+  license: "GNU General Public License v3.0"
+  license_file: "LICENSE"

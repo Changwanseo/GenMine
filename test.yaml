@@ -1,0 +1,38 @@
+name: test
+channels:
+  - etetoolkit
+  - anaconda
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bzip2=1.0.8=he774522_0
+  - ca-certificates=2022.4.26=haa95532_0
+  - certifi=2022.6.15=py310haa95532_0
+  - libffi=3.4.2=hd77b12b_4
+  - openssl=1.1.1o=h2bbff1b_0
+  - pip=21.2.4=py310haa95532_0
+  - python=3.10.4=hbb2ffb3_0
+  - setuptools=61.2.0=py310haa95532_0
+  - sqlite=3.38.5=h2bbff1b_0
+  - tk=8.6.12=h2bbff1b_0
+  - tzdata=2022a=hda174b7_0
+  - vc=14.2=h21ff451_1
+  - vs2015_runtime=14.27.29016=h5e58377_2
+  - wheel=0.37.1=pyhd3eb1b0_0
+  - wincertstore=0.2=py310haa95532_2
+  - xz=5.2.5=h8cc25b3_1
+  - zlib=1.2.12=h8cc25b3_2
+  - pip:
+    - biopython==1.79
+    - et-xmlfile==1.1.0
+    - genmine==1.0.5.0
+    - numpy==1.23.4
+    - openpyxl==3.0.10
+    - pandas==1.5.1
+    - python-dateutil==2.8.2
+    - pytz==2022.6
+    - six==1.16.0
+    - xlrd==2.0.1
+    - xmltodict==0.13.0
+prefix: C:\Users\ckddh\anaconda3\envs\test
