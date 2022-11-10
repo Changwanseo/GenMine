@@ -9,9 +9,7 @@ Citation:
 Chang Wan Seo, Sung Hyun Kim, Young Woon Lim & Myung Soo Park (2022) Re-Identification on Korean Penicillium Sequences in GenBank Collected by Software GenMine, Mycobiology, DOI: 10.1080/12298093.2022.2116816
 
 https://www.tandfonline.com/doi/full/10.1080/12298093.2022.2116816
- 
-# Known issues (1.0.4)
-* Currently, --accession input with invalid accessions only causes errors will be fixed in next version 
+  
  
 ## Install
 * pip
