@@ -17,9 +17,7 @@ https://www.tandfonline.com/doi/full/10.1080/12298093.2022.2116816
 pip install GenMine
 ```
 
-* conda (WIP)
-Currently, please use indirect method
-
+* conda 
 ```
 conda install -c cwseo GenMine
 ```
