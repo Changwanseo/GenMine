@@ -23,15 +23,13 @@ pip install GenMine
 Currently, please use indirect method
 
 ```
-conda create -n GenMine
-conda install pip
-pip install GenMine
+conda install -c cwseo GenMine
 ```
 
 * If problem occurs please uninstall then install with specifying versions
 ```
 pip uninstall GenMine
-pip install GenMine==1.0.4
+pip install GenMine==1.0.6
 ```
 
 ## Usage
