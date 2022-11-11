@@ -15,9 +15,15 @@ twine upload dist/GenMine-{YOUR_VERSION}* 	// use current build number
 
 In new conda environment
 ```
+conda install -c conda-forge grayskull
+conda install -c packaging
 conda install conda-build
 conda install conda-verify
+conda install anaconda-client
 conda install git
-conda skeleton pypi GenMine --version {YOUR_VERSION}
-#conda-build ./conda/ -c bioconda
+grayskull pypi GenMine
+anaconda login
+conda config --set anaconda_upload no
+conda-build ./genmine -c conda-forge
+anaconda upload {Build file location}
 ```
