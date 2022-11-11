@@ -78,8 +78,8 @@ GenMine -e wan101010@snu.ac.kr -c accessions.txt -o "2022-11-02-00-12-08"
 # Caution 2: will not work for finished run
 ```
 
-
-* Parameters
+### Arguments
+* Basic Parameters
 ```
 --genus, -g : List of genus to find | File with genera in each line
 --accession, -c : List of accessions to get | File with accessions in each line
