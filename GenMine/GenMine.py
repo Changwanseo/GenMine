@@ -281,7 +281,9 @@ def filter_acc(acc_list, email) -> list:
     if len(return_acc_list) > 0:
         handle = Entrez.esearch(
             db="Nucleotide",
-            term=" OR ".join([f"{acc}[Nucleotide Accession]" for acc in return_acc_list]),
+            term=" OR ".join(
+                [f"{acc}[Nucleotide Accession]" for acc in return_acc_list]
+            ),
             retmax=len(return_acc_list),
             idtype="acc",
         )
@@ -619,13 +621,25 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
         return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
 
-    # Get note from given record json
+    # Get isolate from given record json
     def Get_isolate(record):
 
         obj_list = retrieve_parallel(
             input_dict=record,
             label="GBQualifier_name",
             label_value="isolate",
+            obj="GBQualifier_value",
+        )
+
+        return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
+
+    # Get clone from given record json
+    def Get_clone(record):
+
+        obj_list = retrieve_parallel(
+            input_dict=record,
+            label="GBQualifier_name",
+            label_value="clone",
             obj="GBQualifier_value",
         )
 
@@ -763,6 +777,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
     # Transform to output format
     for record in json_data:
 
+        """
         dict_temp = {
             "acc": "",
             "length": "",
@@ -780,6 +795,8 @@ def jsontransform(json_in, out):  # transform to form easy to use
             "upload_date": "",
             "seq": "",
         }
+        """
+        dict_temp = {}
 
         if (
             "GBSeq_sequence" in record or "GBSeq_feature-table" in record
@@ -799,6 +816,7 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["culture_collection"] = Get_culture_collection(record)
             dict_temp["note"] = Get_note(record)
             dict_temp["isolate"] = Get_isolate(record)
+            dict_temp["clone"] = Get_clone(record)
 
             dict_temp["primer"] = classification(record["GBSeq_definition"])
             json_temp.append(dict_temp)
@@ -1106,6 +1124,7 @@ def classifier(json_in, out):
         file.close()
 
     return new_keys
+
 
 # get list of acc in transformed json
 def get_acc(json_file):
