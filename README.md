@@ -32,7 +32,7 @@ conda install -c cwseo GenMine
 GenMine -e wan101010@snu.ac.kr -g Penicillium
 ```
 
-* Download all Korean penicillium records
+* Download all Penicillium records and then filter records with term "Korea"
 ```
 GenMine -e wan101010@snu.ac.kr -g Penicillium -a Korea
 ```
