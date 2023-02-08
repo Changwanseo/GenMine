@@ -1,0 +1,51 @@
+{% set name = "GenMine" %}
+{% set version = "1.0.7.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/GenMine-{{ version }}.tar.gz
+  sha256: 2e21df619d868cc3deec7fbd50275974299af2c069dbb878def7e718902f206b
+
+build:
+  entry_points:
+    - GenMine = GenMine.main:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - biopython
+    - pandas
+    - openpyxl
+    - xlrd
+    - numpy
+    - xmltodict
+    - pytz
+    - python-dateutil
+
+test:
+  imports:
+    - GenMine
+  commands:
+    - pip check
+    - GenMine --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Changwanseo/GenMine
+  summary: GenBank data miner for fungal taxonomists
+  license: GPL-3.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - Changwanseo

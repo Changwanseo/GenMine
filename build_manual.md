@@ -26,5 +26,5 @@ grayskull pypi GenMine
 anaconda login
 conda config --set anaconda_upload no
 conda-build ./genmine -c conda-forge
-anaconda upload {Build file location}
+anaconda upload {Build file location} // copy tar.bz2 file from last command
 ```
