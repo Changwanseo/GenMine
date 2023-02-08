@@ -284,7 +284,7 @@ def filter_acc(acc_list, email) -> list:
             term=" OR ".join(
                 [f"{acc}[Nucleotide Accession]" for acc in return_acc_list]
             ),
-            retmax=len(return_acc_list),
+            retmax=2 * len(return_acc_list),
             idtype="acc",
         )
         record = Entrez.read(handle)
