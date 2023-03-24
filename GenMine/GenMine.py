@@ -253,6 +253,30 @@ def ncbi_getacc(email, term, out):
 
     return list_acc
 
+# To manage shotgun contig accessions
+def entrez_query_generator(acc_list):
+    acc_tmp_list = []
+    for acc in acc_list:
+        # for normal genbank accession
+        if re.fullmatch(
+            r"(([A-Z]{1}[0-9]{5})(\.[0-9]{1}){0,1})|(([A-Z]{2}[\_]{0,1}[0-9]{6}){1}([\.][0-9]){0,1})",
+            acc.strip(),
+        ):
+            acc_tmp_list.append(f"{acc.strip().split('.')[0]}") 
+        # For shotgun sequences
+        elif re.fullmatch(r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})", acc.strip()):
+            acc_tmp_list.append(
+                acc.strip().split(".")[0]
+            )
+        else:
+            Mes(
+                f"[Error] Developmental error, bad accession {acc} entered entrez_query_generator please ask to developer"
+            )
+            raise Exception
+
+    acc_string = " ".join(acc_tmp_list)
+
+    return acc_string
 
 # filter accessions by regex
 def filter_acc(acc_list, email) -> list:
@@ -261,6 +285,7 @@ def filter_acc(acc_list, email) -> list:
     for acc in acc_list:
         if acc.strip() == "":
             pass
+        # for normal genbank accession
         elif re.fullmatch(
             r"(([A-Z]{1}[0-9]{5})(\.[0-9]{1}){0,1})|(([A-Z]{2}[\_]{0,1}[0-9]{6}){1}([\.][0-9]){0,1})",
             acc.strip(),
@@ -268,6 +293,11 @@ def filter_acc(acc_list, email) -> list:
             return_acc_list.append(
                 acc.strip().split(".")[0]
             )  # Use most recent version of sequence
+        # For shotgun sequences
+        elif re.fullmatch(r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})", acc.strip()):
+            return_acc_list.append(
+                acc.strip().split(".")[0]
+            )
         else:
             Mes(
                 f"[Warning] Accession {acc} does not seems to be valid accession. Passing"
@@ -277,17 +307,16 @@ def filter_acc(acc_list, email) -> list:
     # to get number of result
     # get accession_list term
     Entrez.email = email
-
+    print(entrez_query_generator(return_acc_list))
     if len(return_acc_list) > 0:
         handle = Entrez.esearch(
             db="Nucleotide",
-            term=" OR ".join(
-                [f"{acc}[Nucleotide Accession]" for acc in return_acc_list]
-            ),
+            term=entrez_query_generator(return_acc_list),
             retmax=2 * len(return_acc_list),
             idtype="acc",
         )
         record = Entrez.read(handle)
+        print(record["IdList"])
         valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
 
         for acc in return_acc_list:
@@ -297,6 +326,8 @@ def filter_acc(acc_list, email) -> list:
                 )
     else:
         valid_acc_list = []
+
+    print(valid_acc_list)
 
     return valid_acc_list
 
