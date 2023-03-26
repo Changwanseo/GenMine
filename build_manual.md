@@ -16,8 +16,7 @@ twine upload dist/GenMine-{YOUR_VERSION}* 	// use current build number
 # conda build
 In new conda environment
 ```
-conda install -c conda-forge grayskull
-conda install -c conda-forge packaging
+conda install -c conda-forge grayskull packaging
 conda install conda-build
 conda install conda-verify
 conda install anaconda-client
