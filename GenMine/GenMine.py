@@ -23,6 +23,7 @@ import shutil
 
 log_file = open("log.txt", "w")
 
+
 # Logging Functions
 def Time_now():
     now = datetime.now()
@@ -73,7 +74,6 @@ def delcomma(string):
 
 # Main GenBank file downloadig function
 def downloader(list_acc, path_tmp, out, cut=50):
-
     # Parse
     cnt = 0  # counter by 50
     cnt_all = len(list_acc)  # total number of records
@@ -88,7 +88,6 @@ def downloader(list_acc, path_tmp, out, cut=50):
 
     # Iterating with 50 items
     for i in range(int((len(list_acc) - 1) / cut) + 1):
-
         # Try to parse saved files
         if str(i) in [file for file in os.listdir(f"{path_tmp}")]:
             Mes("Found saved")
@@ -234,7 +233,6 @@ def downloader(list_acc, path_tmp, out, cut=50):
 
 # Get accession list from GenBank
 def ncbi_getacc(email, term, out):
-
     Entrez.email = email
 
     # Get all ID
@@ -253,6 +251,7 @@ def ncbi_getacc(email, term, out):
 
     return list_acc
 
+
 # To manage shotgun contig accessions
 def entrez_query_generator(acc_list):
     acc_tmp_list = []
@@ -262,12 +261,13 @@ def entrez_query_generator(acc_list):
             r"(([A-Z]{1}[0-9]{5})(\.[0-9]{1}){0,1})|(([A-Z]{2}[\_]{0,1}[0-9]{6}){1}([\.][0-9]){0,1})",
             acc.strip(),
         ):
-            acc_tmp_list.append(f"{acc.strip().split('.')[0]}") 
+            acc_tmp_list.append(f"{acc.strip().split('.')[0]}")
         # For shotgun sequences
-        elif re.fullmatch(r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})", acc.strip()):
-            acc_tmp_list.append(
-                acc.strip().split(".")[0]
-            )
+        elif re.fullmatch(
+            r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})",
+            acc.strip(),
+        ):
+            acc_tmp_list.append(acc.strip().split(".")[0])
         else:
             Mes(
                 f"[Error] Developmental error, bad accession {acc} entered entrez_query_generator please ask to developer"
@@ -277,6 +277,7 @@ def entrez_query_generator(acc_list):
     acc_string = " ".join(acc_tmp_list)
 
     return acc_string
+
 
 # filter accessions by regex
 def filter_acc(acc_list, email) -> list:
@@ -294,10 +295,11 @@ def filter_acc(acc_list, email) -> list:
                 acc.strip().split(".")[0]
             )  # Use most recent version of sequence
         # For shotgun sequences
-        elif re.fullmatch(r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})", acc.strip()):
-            return_acc_list.append(
-                acc.strip().split(".")[0]
-            )
+        elif re.fullmatch(
+            r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})",
+            acc.strip(),
+        ):
+            return_acc_list.append(acc.strip().split(".")[0])
         else:
             Mes(
                 f"[Warning] Accession {acc} does not seems to be valid accession. Passing"
@@ -385,7 +387,6 @@ def retrieve_parallel(input_dict, label, label_value, obj):
                     obj_list += retrieve_parallel(o, label, label_value, obj)
 
         elif type(input_dict[key]) is dict:
-
             obj_list += retrieve_parallel(input_dict[key], label, label_value, obj)
 
     return obj_list
@@ -393,7 +394,6 @@ def retrieve_parallel(input_dict, label, label_value, obj):
 
 # change list output as string form
 def format_list(input_list, filter_list=[], add=", ", default=""):
-
     out_list = []
     for o in input_list:
         if not (o in filter_list):
@@ -540,7 +540,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Get paper title from given record json
     def Get_title(record):
-
         state = 0
         title = []
         if "GBSeq_references" in record:
@@ -594,7 +593,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Get voucher from given record json
     def Get_voucher(record):
-
         obj_list = retrieve_parallel(
             input_dict=record,
             label="GBQualifier_name",
@@ -606,7 +604,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Get type_material from given record json
     def Get_type_material(record):
-
         obj_list = retrieve_parallel(
             input_dict=record,
             label="GBQualifier_name",
@@ -618,7 +615,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Get strain from given record json
     def Get_strain(record):
-
         obj_list = retrieve_parallel(
             input_dict=record,
             label="GBQualifier_name",
@@ -630,7 +626,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Get culture_collection from given record json
     def Get_culture_collection(record):
-
         obj_list = retrieve_parallel(
             input_dict=record,
             label="GBQualifier_name",
@@ -642,7 +637,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Get note from given record json
     def Get_note(record):
-
         obj_list = retrieve_parallel(
             input_dict=record,
             label="GBQualifier_name",
@@ -654,7 +648,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Get isolate from given record json
     def Get_isolate(record):
-
         obj_list = retrieve_parallel(
             input_dict=record,
             label="GBQualifier_name",
@@ -666,7 +659,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Get clone from given record json
     def Get_clone(record):
-
         obj_list = retrieve_parallel(
             input_dict=record,
             label="GBQualifier_name",
@@ -677,7 +669,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
         return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
 
     def Get_author(record):
-
         author_list = []
 
         if "GBSeq_references" in record.keys():
@@ -807,7 +798,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Transform to output format
     for record in json_data:
-
         """
         dict_temp = {
             "acc": "",
@@ -832,7 +822,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
         if (
             "GBSeq_sequence" in record or "GBSeq_feature-table" in record
         ):  # remove data without sequence
-
             dict_temp["acc"] = record["GBSeq_locus"]
             dict_temp["length"] = record["GBSeq_length"]
             dict_temp["seqname"] = record["GBSeq_definition"]
@@ -867,7 +856,6 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
 
 def getseq(DB, out, additional_terms=[]):
-
     # terms are chosen in definition
     # additional terms are chosen in all parts
 
@@ -909,7 +897,6 @@ def getseq(DB, out, additional_terms=[]):
 
 
 def getseq_without(DB, out, additional_terms=[], exceptional_terms=[]):
-
     # terms are chosen in definition
     # additional terms are chosen in all parts
 
@@ -955,7 +942,6 @@ def getseq_without(DB, out, additional_terms=[], exceptional_terms=[]):
 
 
 def seqrecordtodict(Seqrecord):
-
     dict_record = {
         "acc": "",
         "len": 0,
@@ -974,7 +960,6 @@ def seqrecordtodict(Seqrecord):
     dict_record["spname"] = Seqrecord.annotations["organism"]
 
     for Reference in Seqrecord.annotations["references"]:
-
         dict_record["journal_things"].append(Reference.title)
         dict_record["journal_things"].append(Reference.journal)
 
@@ -1017,7 +1002,6 @@ def date_renamer(string):
 
 
 def classification(description):
-
     if (
         "internal transcribed spacer 1" in description
         and "internal transcribed spacer 2" in description
@@ -1101,7 +1085,6 @@ def classification(description):
 
 
 def BLAST_downloader(fasta_in, blast_out):
-
     records = SeqIO.parse(fasta_in, "fasta")
     for i, record in enumerate(list(records)):
         print(i)
@@ -1115,7 +1098,6 @@ def BLAST_downloader(fasta_in, blast_out):
 
 
 def Build_DB(DB_fasta, out):
-
     cmd = "makeblastdb -in " + DB_fasta + " -out " + out + " -dbtype nucl"
     os.system(cmd)
 
@@ -1129,7 +1111,6 @@ def BLASTn(query, db, evalue, out):
 
 
 def classifier(json_in, out):
-
     with open(json_in) as json_file:
         json_data = json.load(json_file)
 
@@ -1159,7 +1140,6 @@ def classifier(json_in, out):
 
 # get list of acc in transformed json
 def get_acc(json_file):
-
     file = open(json_file, encoding="UTF-8")
     json_list = json.loads(file.read())
 
@@ -1173,7 +1153,6 @@ def get_acc(json_file):
 
 # from json file, pick data with given acc and save as json
 def json_pick(json_file, acc_list, out):
-
     file = open(json_file, encoding="UTF-8")
     json_list = json.loads(file.read())
 
@@ -1196,7 +1175,6 @@ def json_pick(json_file, acc_list, out):
 
 
 def json_merge(json_list, out):
-
     all_records = []
     for json_file in json_list:
         file = open(json_file, encoding="UTF-8")
@@ -1253,7 +1231,6 @@ def saver(path_work, name_out, max_len, additional_term):
 def ncbi_download(
     email, genus_term, additional_term, name_out, path_work, path_tmp, max_len
 ):
-
     # select outgroup location
     path_localgb = f"{path_work}/{name_out}.json"
     path_localgb_xlsx = f"{path_work}/{name_out}.xlsx"
@@ -1291,7 +1268,6 @@ def ncbi_download(
 
 # Download by given list of accession
 def ncbi_downloadbyacclist(email, list_acc, name_out, path_work, path_tmp, max_len):
-
     Entrez.email = email
 
     Mes(f"Number of IDs: {len(list_acc)}")
