@@ -20,6 +20,7 @@ import re
 import pickle
 import pandas as pd
 import shutil
+from copy import deepcopy
 
 log_file = open("log.txt", "w")
 
@@ -261,20 +262,15 @@ def entrez_query_generator(acc_list):
             r"(([A-Z]{1}[0-9]{5})(\.[0-9]{1}){0,1})|(([A-Z]{2}[\_]{0,1}[0-9]{6}){1}([\.][0-9]){0,1})",
             acc.strip(),
         ):
-            acc_tmp_list.append(f"{acc.strip().split('.')[0]}")
-        # For shotgun sequences
-        elif re.fullmatch(
-            r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})",
-            acc.strip(),
-        ):
-            acc_tmp_list.append(acc.strip().split(".")[0])
+            acc_tmp_list.append(f"{acc.strip().split('.')[0]}[Accession]")
         else:
             Mes(
                 f"[Error] Developmental error, bad accession {acc} entered entrez_query_generator please ask to developer"
             )
             raise Exception
 
-    acc_string = " ".join(acc_tmp_list)
+    # acc_string = " OR ".join(acc_tmp_list)
+    acc_string = " OR ".join(acc_tmp_list)
 
     return acc_string
 
@@ -283,6 +279,8 @@ def entrez_query_generator(acc_list):
 def filter_acc(acc_list, email) -> list:
     # We can do this with pythonic expressions, but using iterative way for reporting
     return_acc_list = []
+    # Using normal accession and shotgun accession together makes error
+    return_shotgun_list = []
     for acc in acc_list:
         if acc.strip() == "":
             pass
@@ -294,12 +292,13 @@ def filter_acc(acc_list, email) -> list:
             return_acc_list.append(
                 acc.strip().split(".")[0]
             )  # Use most recent version of sequence
+
         # For shotgun sequences
         elif re.fullmatch(
             r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})",
             acc.strip(),
         ):
-            return_acc_list.append(acc.strip().split(".")[0])
+            return_shotgun_list.append(acc.strip().split(".")[0])
         else:
             Mes(
                 f"[Warning] Accession {acc} does not seems to be valid accession. Passing"
@@ -309,27 +308,50 @@ def filter_acc(acc_list, email) -> list:
     # to get number of result
     # get accession_list term
     Entrez.email = email
-    print(entrez_query_generator(return_acc_list))
-    if len(return_acc_list) > 0:
-        handle = Entrez.esearch(
-            db="Nucleotide",
-            term=entrez_query_generator(return_acc_list),
-            retmax=2 * len(return_acc_list),
-            idtype="acc",
-        )
-        record = Entrez.read(handle)
-        print(record["IdList"])
-        valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
 
-        for acc in return_acc_list:
-            if not (acc in valid_acc_list):
-                Mes(
-                    f"GenBank accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
+    if len(return_acc_list) + len(return_shotgun_list) > 0:
+        valid_acc_list = []
+        if len(return_acc_list) > 0:
+            handle = Entrez.esearch(
+                db="Nucleotide",
+                term=entrez_query_generator(return_acc_list),
+                retmax=2 * len(return_acc_list),
+                idtype="acc",
+            )
+
+            # print(handle)
+            record = Entrez.read(handle)
+
+            # print(record.keys())
+            # print(record["QueryTranslation"])
+            # print(f"Available ID list retrived from GenBank: \n{record['IdList']}")
+            valid_acc_list += [acc.split(".")[0] for acc in record["IdList"]]
+
+            for acc in return_acc_list:
+                if not (acc in valid_acc_list):
+                    Mes(
+                        f"GenBank accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
+                    )
+
+        # Running shotgun independently to prevent error
+        if len(return_shotgun_list) > 0:
+            for acc in return_shotgun_list:
+                handle = Entrez.esearch(
+                    db="Nucleotide",
+                    term=acc,
+                    retmax=2,
+                    idtype="acc",
                 )
+                record = Entrez.read(handle)
+                valid_acc_list += [_acc.split(".")[0] for _acc in record["IdList"]]
+                print(record)
+                if not acc in valid_acc_list:
+                    Mes(
+                        f"GenBank shotgun accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
+                    )
+
     else:
         valid_acc_list = []
-
-    print(valid_acc_list)
 
     return valid_acc_list
 
@@ -458,6 +480,42 @@ def uni_jsontoxlsx(json_in, xlsx):
                 dict_all[key].append("NaN")
 
     df = pd.DataFrame(dict_all)
+
+    def get_species(string):
+        str_list = str(string).split(" ")
+        if len(str_list) >= 2:
+            return " ".join(str_list[1:])
+        else:
+            return ""
+
+    df["genus"] = df["spname"].str.split(" ").str[0]
+    df["species"] = df["spname"].apply(get_species)
+    df.rename(columns={"primer": "gene"}, inplace=True)
+    df.drop(labels="spname", axis=1, inplace=True)
+
+    df = df[
+        [
+            "acc",
+            "seqname",
+            "gene",
+            "culture_collection",
+            "voucher",
+            "isolate",
+            "strain",
+            "clone",
+            "genus",
+            "species",
+            "seq",
+            "upload_date",
+            "type_material",
+            "length",
+            "journal",
+            "title",
+            "department",
+            "uploader",
+            "note",
+        ]
+    ]
 
     with pd.ExcelWriter(xlsx) as writer:
         df.to_excel(writer, index=False, sheet_name="Sheet 1")
@@ -1049,7 +1107,10 @@ def classification(description):
     ):
         return "SSU(mt)"
         print("SSU(mt)")
-    elif "18S ribosomal RNA" in description:
+    elif (
+        "18S ribosomal RNA" in description
+        or "small subunit ribosomal RNA" in description
+    ):
         return "SSU"
         print("SSU")
     elif "elongation factor" in description:
@@ -1200,7 +1261,7 @@ def saver(path_work, name_out, max_len, additional_term):
     # Transform json into user friendly form
     jsontransform(
         f"{path_work}/{name_out}.json",
-        f"{path_work}/{name_out}_transformed.json",
+        f"{path_work}/{name_out}_result.json",
     )
 
     # Transform json to excel form
@@ -1212,16 +1273,16 @@ def saver(path_work, name_out, max_len, additional_term):
 
     # Transform user friendly json to excel form
     uni_jsontoxlsx(
-        f"{path_work}/{name_out}_transformed.json",
-        f"{path_work}/{name_out}_transformed.xlsx",
+        f"{path_work}/{name_out}_result.json",
+        f"{path_work}/{name_out}_result.xlsx",
     )
 
     # Parse finalized data
-    term_acc = get_acc(f"{path_work}/{name_out}_transformed.json")
+    term_acc = get_acc(f"{path_work}/{name_out}_result.json")
 
     Mes(f"Total {len(term_acc)} found")
     classified_genes = classifier(
-        f"{path_work}/{name_out}_transformed.json",
+        f"{path_work}/{name_out}_result.json",
         f"{path_work}/{name_out}",
     )
 

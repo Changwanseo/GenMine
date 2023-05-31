@@ -1,5 +1,5 @@
 {% set name = "GenMine" %}
-{% set version = "1.0.9" %}
+{% set version = "1.0.10" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/GenMine-{{ version }}.tar.gz
-  sha256: 083dcede4a4061819ea7e6cadda7d5ebf5c50cc44c66ef09cf6fe4cd682e6f66
+  sha256: 0b9281de897174c215e3f447198f1c523a55f5234a9680e3e9ca578d7315d80a
 
 build:
   entry_points:

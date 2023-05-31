@@ -1,5 +1,4 @@
 def main():
-
     from . import GenMine as Gen
     from GenMine.command import CommandParser
     from datetime import datetime, date
@@ -46,6 +45,7 @@ def main():
             else:
                 accession_list.append(acc)
 
+    print(accession_list)
     # Filter accession_list
     accession_list = Gen.filter_acc(accession_list, email)
 
