@@ -1,8 +1,5 @@
 from Bio import Entrez
 from Bio import SeqIO
-from Bio import pairwise2
-from Bio.pairwise2 import format_alignment
-
 from Bio.Blast.Applications import NcbiblastnCommandline
 from Bio.Blast import NCBIXML
 from Bio.Seq import Seq

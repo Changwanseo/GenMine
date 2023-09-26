@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="GenMine",
-    version="1.0.10",
+    version="1.0.11",
     description="GenBank data miner for fungal taxonomists",
     author="Changwan Seo",
     author_email="wan101010@snu.ac.kr",

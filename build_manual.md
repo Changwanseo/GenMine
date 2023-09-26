@@ -8,8 +8,10 @@ python setup.py install
 In new conda environment
 ```
 conda create -n GenMine_build
+conda activate GenMine_build
 conda install pip
 pip install twine
+pip install wheel
 python setup.py bdist_wheel --universal
 python setup.py sdist
 twine upload dist/GenMine-{YOUR_VERSION}* 	// use current build number, don't forget *
