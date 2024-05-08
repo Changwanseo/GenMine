@@ -14,7 +14,7 @@ pip install twine
 pip install wheel
 python setup.py bdist_wheel --universal
 python setup.py sdist
-twine upload dist/GenMine-{YOUR_VERSION}* 	// use current build number, don't forget *
+twine upload dist/GenMine-{YOUR_VERSION}* --config-file {your pypirc file} 	// use current build number, don't forget *
 ```
 # conda build
 In new conda environment

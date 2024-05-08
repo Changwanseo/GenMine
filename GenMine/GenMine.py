@@ -19,7 +19,7 @@ import pandas as pd
 import shutil
 from copy import deepcopy
 
-log_file = open("log.txt", "w")
+log_file = None
 
 
 # Logging Functions
@@ -1289,6 +1289,17 @@ def saver(path_work, name_out, max_len, additional_term):
 def ncbi_download(
     email, genus_term, additional_term, name_out, path_work, path_tmp, max_len
 ):
+    global log_file
+    try:
+        # global log_file
+        log_file = open(f"{path_work}/log.txt", "a")
+
+    except:
+        # global log_file
+        log_file = open(f"{path_work}/log.txt", "w")
+
+    # print(log_file)
+
     # select outgroup location
     path_localgb = f"{path_work}/{name_out}.json"
     path_localgb_xlsx = f"{path_work}/{name_out}.xlsx"
@@ -1326,6 +1337,15 @@ def ncbi_download(
 
 # Download by given list of accession
 def ncbi_downloadbyacclist(email, list_acc, name_out, path_work, path_tmp, max_len):
+    global log_file
+    try:
+        # global log_file
+        log_file = open(f"{path_work}/log.txt", "a")
+
+    except:
+        # global log_file
+        log_file = open(f"{path_work}/log.txt", "w")
+
     Entrez.email = email
 
     Mes(f"Number of IDs: {len(list_acc)}")
