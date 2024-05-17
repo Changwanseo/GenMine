@@ -1,6 +1,7 @@
 from Bio import Entrez
 from Bio import SeqIO
-from Bio.Blast.Applications import NcbiblastnCommandline
+
+# from Bio.Blast.Applications import NcbiblastnCommandline
 from Bio.Blast import NCBIXML
 from Bio.Seq import Seq
 import time
@@ -20,6 +21,8 @@ import shutil
 from copy import deepcopy
 
 log_file = None
+
+__version__ = "1.0.13"
 
 
 # Logging Functions
@@ -1160,12 +1163,14 @@ def Build_DB(DB_fasta, out):
     os.system(cmd)
 
 
+"""
 def BLASTn(query, db, evalue, out):
     blastn_cline = ncbiblastnCommandline(
         query=query, db=db, evalue=evalue, outfmt=7, out=out
     )
     Mes("BLAST: " + str(blastn_cline))
     blastn_cline()
+"""
 
 
 def classifier(json_in, out):
