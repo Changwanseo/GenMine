@@ -1,8 +1,11 @@
 from Bio import Entrez
 from Bio import SeqIO
 
+# from Bio import pairwise2
+# from Bio.pairwise2 import format_alignment
+
 # from Bio.Blast.Applications import NcbiblastnCommandline
-from Bio.Blast import NCBIXML
+# from Bio.Blast import NCBIXML
 from Bio.Seq import Seq
 import time
 from time import sleep
@@ -18,11 +21,9 @@ import re
 import pickle
 import pandas as pd
 import shutil
-from copy import deepcopy
+import logging
 
-log_file = None
-
-__version__ = "1.0.13"
+# log_file = open("log.txt", "w")
 
 
 # Logging Functions
@@ -40,11 +41,13 @@ def Time_now():
 
 
 # To both print to stdout and logfile
+"""
 def Mes(text):
     text = str(text)
     text = Time_now() + text
     log_file.write(text + "\n")
     print(text + "\n")
+"""
 
 
 def listtostring(list_in):
@@ -84,14 +87,14 @@ def downloader(list_acc, path_tmp, out, cut=50):
     record_list = []
 
     if cnt_all == 0:
-        Mes("No accessions available in GenBank. Please check your input")
+        logging.error("No accessions available in GenBank. Please check your input")
         return -1
 
     # Iterating with 50 items
     for i in range(int((len(list_acc) - 1) / cut) + 1):
         # Try to parse saved files
         if str(i) in [file for file in os.listdir(f"{path_tmp}")]:
-            Mes("Found saved")
+            logging.info("Found saved")
             cnt += cut
             with open(f"{path_tmp}/{i}", "rb") as fp:
                 data = pickle.load(fp)
@@ -103,7 +106,7 @@ def downloader(list_acc, path_tmp, out, cut=50):
             acc_string = ",".join(list_acc[i * cut :])
             sleep(0.3)
             cnt += len(list_acc[i * cut :])
-            Mes(
+            logging.info(
                 f"{cnt}/{cnt_all} {round(100*cnt/cnt_all,2)}% {round(time.time()-start_time,2)}s"
             )
 
@@ -115,7 +118,7 @@ def downloader(list_acc, path_tmp, out, cut=50):
                 )
 
             except:
-                Mes("Requesting again...")
+                logging.warning("Server not responding, Requesting again...")
 
                 # Second trial
                 try:
@@ -133,7 +136,7 @@ def downloader(list_acc, path_tmp, out, cut=50):
                         )
                     # Final trial
                     except:
-                        Mes(
+                        logging.warning(
                             "Last requesting due to connection error, will be take long (15 min)..."
                         )
                         sleep(900)
@@ -159,7 +162,7 @@ def downloader(list_acc, path_tmp, out, cut=50):
                 with open(f"{path_tmp}/{i}", "wb") as f:
                     pickle.dump(tmp_record_list, f)
             except:
-                Mes("Saving Error")
+                logging.error("[DEVELOPMENTAL ERROR] Data saving failed")
                 raise Exception
 
         # non last chunk
@@ -167,7 +170,7 @@ def downloader(list_acc, path_tmp, out, cut=50):
             acc_string = ",".join(list_acc[i * cut : i * cut + cut])
             sleep(0.3)
             cnt += cut
-            Mes(
+            logging.info(
                 f"{cnt}/{cnt_all} {round(100*cnt/cnt_all,2)}% {round(time.time()-start_time,2)}s"
             )
 
@@ -178,7 +181,7 @@ def downloader(list_acc, path_tmp, out, cut=50):
                 )
             except:
                 # Second trial
-                Mes("Requesting again...")
+                logging.warning("Server not responding, Requesting again...")
                 try:
                     sleep(10)
                     handle = Entrez.efetch(
@@ -193,7 +196,7 @@ def downloader(list_acc, path_tmp, out, cut=50):
                         )
                     # Last trial
                     except:
-                        Mes(
+                        logging.warning(
                             "Last requesting due to connection error, will be take long (15 min)..."
                         )
                         sleep(900)
@@ -218,7 +221,7 @@ def downloader(list_acc, path_tmp, out, cut=50):
                 with open(f"{path_tmp}/{i}", "wb") as f:
                     pickle.dump(tmp_record_list, f)
             except:
-                Mes("Saving Error")
+                logging.error("[DEVELOPMENTAL ERROR] Data saving failed")
                 raise Exception
 
     with open(out, "w") as fp:
@@ -248,7 +251,7 @@ def ncbi_getacc(email, term, out):
 
     list_acc = record["IdList"]
 
-    Mes(f"Number of IDs: {len(list_acc)}")
+    logging.info(f"Number of IDs: {len(list_acc)}")
 
     return list_acc
 
@@ -262,15 +265,20 @@ def entrez_query_generator(acc_list):
             r"(([A-Z]{1}[0-9]{5})(\.[0-9]{1}){0,1})|(([A-Z]{2}[\_]{0,1}[0-9]{6}){1}([\.][0-9]){0,1})",
             acc.strip(),
         ):
-            acc_tmp_list.append(f"{acc.strip().split('.')[0]}[Accession]")
+            acc_tmp_list.append(f"{acc.strip().split('.')[0]}")
+        # For shotgun sequences
+        elif re.fullmatch(
+            r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})",
+            acc.strip(),
+        ):
+            acc_tmp_list.append(acc.strip().split(".")[0])
         else:
-            Mes(
-                f"[Error] Developmental error, bad accession {acc} entered entrez_query_generator please ask to developer"
+            logging.error(
+                f"[DEVELOPMENTAL ERROR] Bad accession {acc} entered entrez_query_generator. Please report your failed input to wan101010@snu.ac.kr"
             )
             raise Exception
 
-    # acc_string = " OR ".join(acc_tmp_list)
-    acc_string = " OR ".join(acc_tmp_list)
+    acc_string = " ".join(acc_tmp_list)
 
     return acc_string
 
@@ -279,8 +287,6 @@ def entrez_query_generator(acc_list):
 def filter_acc(acc_list, email) -> list:
     # We can do this with pythonic expressions, but using iterative way for reporting
     return_acc_list = []
-    # Using normal accession and shotgun accession together makes error
-    return_shotgun_list = []
     for acc in acc_list:
         if acc.strip() == "":
             pass
@@ -292,66 +298,42 @@ def filter_acc(acc_list, email) -> list:
             return_acc_list.append(
                 acc.strip().split(".")[0]
             )  # Use most recent version of sequence
-
         # For shotgun sequences
         elif re.fullmatch(
             r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})",
             acc.strip(),
         ):
-            return_shotgun_list.append(acc.strip().split(".")[0])
+            return_acc_list.append(acc.strip().split(".")[0])
         else:
-            Mes(
-                f"[Warning] Accession {acc} does not seems to be valid accession. Passing"
+            logging.warning(
+                f"Accession {acc} does not seems to be valid accession. Passing"
             )
 
     # Check if acc are valid by asking to GenBank
     # to get number of result
     # get accession_list term
     Entrez.email = email
+    # print(entrez_query_generator(return_acc_list))
+    if len(return_acc_list) > 0:
+        handle = Entrez.esearch(
+            db="Nucleotide",
+            term=entrez_query_generator(return_acc_list),
+            retmax=2 * len(return_acc_list),
+            idtype="acc",
+        )
+        record = Entrez.read(handle)
+        # print(record["IdList"])
+        valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
 
-    if len(return_acc_list) + len(return_shotgun_list) > 0:
-        valid_acc_list = []
-        if len(return_acc_list) > 0:
-            handle = Entrez.esearch(
-                db="Nucleotide",
-                term=entrez_query_generator(return_acc_list),
-                retmax=2 * len(return_acc_list),
-                idtype="acc",
-            )
-
-            # print(handle)
-            record = Entrez.read(handle)
-
-            # print(record.keys())
-            # print(record["QueryTranslation"])
-            # print(f"Available ID list retrived from GenBank: \n{record['IdList']}")
-            valid_acc_list += [acc.split(".")[0] for acc in record["IdList"]]
-
-            for acc in return_acc_list:
-                if not (acc in valid_acc_list):
-                    Mes(
-                        f"GenBank accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
-                    )
-
-        # Running shotgun independently to prevent error
-        if len(return_shotgun_list) > 0:
-            for acc in return_shotgun_list:
-                handle = Entrez.esearch(
-                    db="Nucleotide",
-                    term=acc,
-                    retmax=2,
-                    idtype="acc",
+        for acc in return_acc_list:
+            if not (acc in valid_acc_list):
+                logging.warning(
+                    f"GenBank accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
                 )
-                record = Entrez.read(handle)
-                valid_acc_list += [_acc.split(".")[0] for _acc in record["IdList"]]
-                print(record)
-                if not acc in valid_acc_list:
-                    Mes(
-                        f"GenBank shotgun accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
-                    )
-
     else:
         valid_acc_list = []
+
+    # print(valid_acc_list)
 
     return valid_acc_list
 
@@ -442,7 +424,7 @@ def jsontoxlsx(json_in, xlsx, max_len=0):
                     if not (key in dict_all):
                         dict_all[key] = []
         except:
-            print_json(json_data)
+            # print_json(json_data)
             raise Exception
 
     for record in json_data:
@@ -480,42 +462,6 @@ def uni_jsontoxlsx(json_in, xlsx):
                 dict_all[key].append("NaN")
 
     df = pd.DataFrame(dict_all)
-
-    def get_species(string):
-        str_list = str(string).split(" ")
-        if len(str_list) >= 2:
-            return " ".join(str_list[1:])
-        else:
-            return ""
-
-    df["genus"] = df["spname"].str.split(" ").str[0]
-    df["species"] = df["spname"].apply(get_species)
-    df.rename(columns={"primer": "gene"}, inplace=True)
-    df.drop(labels="spname", axis=1, inplace=True)
-
-    df = df[
-        [
-            "acc",
-            "seqname",
-            "gene",
-            "culture_collection",
-            "voucher",
-            "isolate",
-            "strain",
-            "clone",
-            "genus",
-            "species",
-            "seq",
-            "upload_date",
-            "type_material",
-            "length",
-            "journal",
-            "title",
-            "department",
-            "uploader",
-            "note",
-        ]
-    ]
 
     with pd.ExcelWriter(xlsx) as writer:
         df.to_excel(writer, index=False, sheet_name="Sheet 1")
@@ -627,8 +573,8 @@ def jsontransform(json_in, out):  # transform to form easy to use
                                 title.append(reference["GBReference_title"])
 
                             else:  # unexpected input
-                                print(record["GBSeq_references"]["GBReference"])
-                                print(reference["GBReference_title"])
+                                logging.error(record["GBSeq_references"]["GBReference"])
+                                logging.error(reference["GBReference_title"])
                                 raise Exception
                         else:
                             if reference["GBReference_journal"] == "Unpublished":
@@ -638,11 +584,11 @@ def jsontransform(json_in, out):  # transform to form easy to use
                                 # only journal record exists and no title exists
                                 state = 2
                                 title.append("Unknown")
-                                print(record)
+                                # print(record)
                                 # raise Exception
 
                     except:
-                        print(record)
+                        logging.error(record)
                         raise Exception
         else:
             title = []
@@ -786,8 +732,8 @@ def jsontransform(json_in, out):  # transform to form easy to use
                             )
 
                     else:
-                        print(record["GBSeq_references"]["GBReference"])
-                        print("Failed to find authors")
+                        # print(record["GBSeq_references"]["GBReference"])
+                        logging.warning("Failed to find authors")
                         return (
                             []
                         )  # in some of the records, no author exists. See NG_071242
@@ -832,18 +778,18 @@ def jsontransform(json_in, out):  # transform to form easy to use
                                             )
 
                 else:
-                    print(record)
+                    logging.error(record)
                     raise Exception
             else:
                 if "GBReferene_authors" in record.keys():
-                    print(record)
+                    logging.error(record)
                     raise Exception
                 else:
-                    print(record)
+                    logging.error(record)
                     raise Exception
 
         else:
-            print("No author information")
+            logging.warning("No author information")
 
         author_list = list(set(author_list))
 
@@ -905,7 +851,9 @@ def jsontransform(json_in, out):  # transform to form easy to use
                 dict_temp["seq"] = "Genomic"
 
         else:
-            Mes("Could not found GBSeq-sequence or GBSeq_feature-table from record")
+            logging.error(
+                "[DEVELOPMETAL ERROR] Could not found GBSeq-sequence or GBSeq_feature-table from record. Please send your input to wan101010@snu.ac.kr"
+            )
             print_json(record)
             raise Exception
 
@@ -946,7 +894,8 @@ def getseq(DB, out, additional_terms=[]):
                 temp_list.append(record)
 
         else:
-            print(record)
+            pass
+            # print(record)
 
     outjson = out + ".json"
 
@@ -983,7 +932,8 @@ def getseq_without(DB, out, additional_terms=[], exceptional_terms=[]):
                     else:
                         list_temp.append("0")
             else:
-                print(record)
+                pass
+                # print(record)
         if "1" in list_temp:
             if "GBSeq_definition" in record and "GBSeq_sequence" in record:
                 outfasta.write(">")
@@ -1036,7 +986,7 @@ def date_remover(string):
     try:
         return string.split(")")[1]
     except:
-        print(string)
+        # print(string)
         raise exception
 
 
@@ -1081,7 +1031,7 @@ def classification(description):
     elif "calmodulin" in description:
         return "CMD"
         print("CMD")
-    elif "RPB2" in description.upper():
+    elif any(x in description.upper() for x in ["RPB2", "RNA POLYMERASE II", "RBP2"]):
         return "RPB2"
         print("RPB2")
     elif "actin" in description.lower() or "ACT" in description:
@@ -1107,10 +1057,7 @@ def classification(description):
     ):
         return "SSU(mt)"
         print("SSU(mt)")
-    elif (
-        "18S ribosomal RNA" in description
-        or "small subunit ribosomal RNA" in description
-    ):
+    elif "18S ribosomal RNA" in description:
         return "SSU"
         print("SSU")
     elif "elongation factor" in description:
@@ -1141,14 +1088,14 @@ def classification(description):
         return "mt_others"
         print("mt_others")
     else:
-        print(description)
+        # print(description)
         return "others"
 
 
 def BLAST_downloader(fasta_in, blast_out):
     records = SeqIO.parse(fasta_in, "fasta")
     for i, record in enumerate(list(records)):
-        print(i)
+        # print(i)
         query = SeqIO.write(record, "temp.fasta", "fasta")
         os.system(
             f"blastn -out {blast_out}_{i}.xml -outfmt 5 -query temp.fasta -db /data/cwseo/BLAST_DB/public/nt -evalue 0.1 -num_threads 2"
@@ -1163,14 +1110,12 @@ def Build_DB(DB_fasta, out):
     os.system(cmd)
 
 
-"""
 def BLASTn(query, db, evalue, out):
     blastn_cline = ncbiblastnCommandline(
         query=query, db=db, evalue=evalue, outfmt=7, out=out
     )
-    Mes("BLAST: " + str(blastn_cline))
+    logging.info("BLAST: " + str(blastn_cline))
     blastn_cline()
-"""
 
 
 def classifier(json_in, out):
@@ -1222,12 +1167,14 @@ def json_pick(json_file, acc_list, out):
     list_json = []
 
     for read in json_list:
-        print(read["acc"])
+        # print(read["acc"])
         if read["acc"] in acc_list:
             list_json.append(read)
 
     if len(list_json) == 0:
-        Mes(f"All accessions in {json_file} has already found in genbank search")
+        logging.warning(
+            f"All accessions in {json_file} has already found in genbank search"
+        )
         return False
 
     else:
@@ -1263,7 +1210,7 @@ def saver(path_work, name_out, max_len, additional_term):
     # Transform json into user friendly form
     jsontransform(
         f"{path_work}/{name_out}.json",
-        f"{path_work}/{name_out}_result.json",
+        f"{path_work}/{name_out}_transformed.json",
     )
 
     # Transform json to excel form
@@ -1275,16 +1222,16 @@ def saver(path_work, name_out, max_len, additional_term):
 
     # Transform user friendly json to excel form
     uni_jsontoxlsx(
-        f"{path_work}/{name_out}_result.json",
-        f"{path_work}/{name_out}_result.xlsx",
+        f"{path_work}/{name_out}_transformed.json",
+        f"{path_work}/{name_out}_transformed.xlsx",
     )
 
     # Parse finalized data
-    term_acc = get_acc(f"{path_work}/{name_out}_result.json")
+    term_acc = get_acc(f"{path_work}/{name_out}_transformed.json")
 
-    Mes(f"Total {len(term_acc)} found")
+    logging.info(f"Total {len(term_acc)} found")
     classified_genes = classifier(
-        f"{path_work}/{name_out}_result.json",
+        f"{path_work}/{name_out}_transformed.json",
         f"{path_work}/{name_out}",
     )
 
@@ -1294,17 +1241,6 @@ def saver(path_work, name_out, max_len, additional_term):
 def ncbi_download(
     email, genus_term, additional_term, name_out, path_work, path_tmp, max_len
 ):
-    global log_file
-    try:
-        # global log_file
-        log_file = open(f"{path_work}/log.txt", "a")
-
-    except:
-        # global log_file
-        log_file = open(f"{path_work}/log.txt", "w")
-
-    # print(log_file)
-
     # select outgroup location
     path_localgb = f"{path_work}/{name_out}.json"
     path_localgb_xlsx = f"{path_work}/{name_out}.xlsx"
@@ -1323,7 +1259,7 @@ def ncbi_download(
     # Parse number of records
     list_acc = record["IdList"]
 
-    Mes(f"Number of IDs: {len(list_acc)}")
+    logging.info(f"Number of IDs: {len(list_acc)}")
 
     # Download GenBank records
     status = downloader(
@@ -1342,18 +1278,9 @@ def ncbi_download(
 
 # Download by given list of accession
 def ncbi_downloadbyacclist(email, list_acc, name_out, path_work, path_tmp, max_len):
-    global log_file
-    try:
-        # global log_file
-        log_file = open(f"{path_work}/log.txt", "a")
-
-    except:
-        # global log_file
-        log_file = open(f"{path_work}/log.txt", "w")
-
     Entrez.email = email
 
-    Mes(f"Number of IDs: {len(list_acc)}")
+    logging.info(f"Number of IDs: {len(list_acc)}")
     # Download GenBank records
     status = downloader(
         list_acc=list_acc, path_tmp=path_tmp, out=f"{path_work}/{name_out}.json"
