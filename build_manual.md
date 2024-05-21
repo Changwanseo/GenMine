@@ -7,23 +7,25 @@ python setup.py install
 # pypi build
 In new conda environment
 ```
+conda create -n GenMine_build
+conda activate GenMine_build
 conda install pip
 pip install twine
+pip install wheel
 python setup.py bdist_wheel --universal
 python setup.py sdist
-twine upload dist/GenMine-{YOUR_VERSION}* 	// use current build number
+twine upload dist/GenMine-{YOUR_VERSION}* --config-file {your pypirc file} 	// use current build number, don't forget *
 ```
 # conda build
 In new conda environment
 ```
-conda install -c conda-forge grayskull packaging
-conda install conda-build
-conda install conda-verify
-conda install anaconda-client
-conda install git
+conda create -n GenMine_condabuild
+conda activate GenMine_condabuild
+conda install -c conda-forge grayskull packaging -y
+conda install conda-build conda-verify anaconda-client git -y
 grayskull pypi GenMine
 anaconda login
 conda config --set anaconda_upload no
 conda-build ./genmine -c conda-forge
-anaconda upload {Build file location} // copy tar.bz2 file from last command
+anaconda upload {Build file location} // copy tar.bz2 file from the stdout of conda-build
 ```
