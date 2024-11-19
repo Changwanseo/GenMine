@@ -501,6 +501,8 @@ def uni_jsontoxlsx(json_in, xlsx):
             "culture_collection",
             "voucher",
             "isolate",
+            "tissue_type",
+            "geo_loc_name",
             "strain",
             "clone",
             "genus",
@@ -715,6 +717,28 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
         return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
 
+    # Get tisue_type from given record json
+    def Get_tissue_type(record):
+        obj_list = retrieve_parallel(
+            input_dict=record,
+            label="GBQualifier_name",
+            label_value="tissue_type",
+            obj="GBQualifier_value",
+        )
+
+        return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
+
+    # Get geo_loc_name from given record json
+    def Get_geo_loc_name(record):
+        obj_list = retrieve_parallel(
+            input_dict=record,
+            label="GBQualifier_name",
+            label_value="geo_loc_name",
+            obj="GBQualifier_value",
+        )
+
+        return format_list(input_list=obj_list, filter_list=[], add=" = ", default="")
+
     # Get clone from given record json
     def Get_clone(record):
         obj_list = retrieve_parallel(
@@ -894,6 +918,8 @@ def jsontransform(json_in, out):  # transform to form easy to use
             dict_temp["culture_collection"] = Get_culture_collection(record)
             dict_temp["note"] = Get_note(record)
             dict_temp["isolate"] = Get_isolate(record)
+            dict_temp["tissue_type"] = Get_tissue_type(record)
+            dict_temp["geo_loc_name"] = Get_geo_loc_name(record)
             dict_temp["clone"] = Get_clone(record)
 
             dict_temp["primer"] = classification(record["GBSeq_definition"])
