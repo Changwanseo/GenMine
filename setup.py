@@ -21,7 +21,7 @@ setup(
         "python-dateutil",
     ],
     zip_safe=False,
-    entry_points={"console_scripts": ["GenMine = genmine.main:main"]},
+    entry_points={"console_scripts": ["GenMine = GenMine.main:main"]},
     include_package_data=True,
     license="GPL3",
 )

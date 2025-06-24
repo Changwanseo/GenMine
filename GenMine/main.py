@@ -1,7 +1,7 @@
 def main():
-    from genmine.src import genmine_module as Gen
-    from genmine.src.command import CommandParser
-    from genmine.src import logger
+    from GenMine.src import genmine_module as Gen
+    from GenMine.src.command import CommandParser
+    from GenMine.src import logger
 
     import subprocess
     import logging
