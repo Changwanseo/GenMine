@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="GenMine",
-    version="1.1.0",
+    version="1.2.0",
     description="GenBank data miner for fungal taxonomists",
     author="Changwan Seo",
     author_email="wan101010@snu.ac.kr",
@@ -21,7 +21,7 @@ setup(
         "python-dateutil",
     ],
     zip_safe=False,
-    entry_points={"console_scripts": ["GenMine = genmine.main:main"]},
+    entry_points={"console_scripts": ["GenMine = GenMine.main:main"]},
     include_package_data=True,
     license="GPL3",
 )

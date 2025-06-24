@@ -265,20 +265,20 @@ def entrez_query_generator(acc_list):
             r"(([A-Z]{1}[0-9]{5})(\.[0-9]{1}){0,1})|(([A-Z]{2}[\_]{0,1}[0-9]{6}){1}([\.][0-9]){0,1})",
             acc.strip(),
         ):
-            acc_tmp_list.append(f"{acc.strip().split('.')[0]}")
+            acc_tmp_list.append(f"{acc.strip().split('.')[0]}" + "[accn]")
         # For shotgun sequences
         elif re.fullmatch(
             r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})",
             acc.strip(),
         ):
-            acc_tmp_list.append(acc.strip().split(".")[0])
+            acc_tmp_list.append(acc.strip().split(".")[0] + "[accn]")
         else:
             logging.error(
                 f"[DEVELOPMENTAL ERROR] Bad accession {acc} entered entrez_query_generator. Please report your failed input to wan101010@snu.ac.kr"
             )
             raise Exception
 
-    acc_string = " ".join(acc_tmp_list)
+    acc_string = " OR ".join(acc_tmp_list)
 
     return acc_string
 
@@ -313,18 +313,23 @@ def filter_acc(acc_list, email) -> list:
     # to get number of result
     # get accession_list term
     Entrez.email = email
-    # print(entrez_query_generator(return_acc_list))
+
     if len(return_acc_list) > 0:
+        term = entrez_query_generator(return_acc_list)
+
         handle = Entrez.esearch(
             db="Nucleotide",
-            term=entrez_query_generator(return_acc_list),
+            term=term,
             retmax=2 * len(return_acc_list),
             idtype="acc",
         )
         record = Entrez.read(handle)
+
+        # print(record)
         # print(record["IdList"])
         valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
 
+        # raise Exception
         for acc in return_acc_list:
             if not (acc in valid_acc_list):
                 logging.warning(
@@ -332,8 +337,6 @@ def filter_acc(acc_list, email) -> list:
                 )
     else:
         valid_acc_list = []
-
-    # print(valid_acc_list)
 
     return valid_acc_list
 
@@ -802,31 +805,11 @@ def jsontransform(json_in, out):  # transform to form easy to use
 
     # Transform to output format
     for record in json_data:
-        """
-        dict_temp = {
-            "acc": "",
-            "length": "",
-            "seqname": "",
-            "spname": "",
-            "uploader": [],
-            "journal": [],
-            "department": [],
-            "title": "",
-            "voucher": "",
-            "type_material": "",
-            "strain": "",
-            "culture_collection": "",
-            "note": "",
-            "upload_date": "",
-            "seq": "",
-        }
-        """
         dict_temp = {}
 
-        if (
-            "GBSeq_sequence" in record or "GBSeq_feature-table" in record
-        ):  # remove data without sequence
-            dict_temp["acc"] = record["GBSeq_locus"]
+        if "GBSeq_sequence" in record or "GBSeq_feature-table" in record:
+            # remove data without sequence
+            dict_temp["acc"] = record["GBSeq_primary-accession"]
             dict_temp["length"] = record["GBSeq_length"]
             dict_temp["seqname"] = record["GBSeq_definition"]
             dict_temp["spname"] = record["GBSeq_organism"]
