@@ -258,6 +258,9 @@ def ncbi_getacc(email, term, out):
 
 # To manage shotgun contig accessions
 def entrez_query_generator(acc_list):
+    # Shuffle acc_list to prevent errors in rerunning acc_list
+    random.shuffle(acc_list)
+
     acc_tmp_list = []
     for acc in acc_list:
         # for normal genbank accession
@@ -281,6 +284,69 @@ def entrez_query_generator(acc_list):
     acc_string = " OR ".join(acc_tmp_list)
 
     return acc_string
+
+
+def validate_accessions_binary_search(accession_list):
+    """
+    Validate GenBank accessions using binary search approach to efficiently
+    identify invalid accessions.
+
+    Args:
+        accession_list: List of accession numbers to validate
+
+    Returns:
+        list: Valid accession numbers
+    """
+
+    # Binary search approach
+    logging.info(f"Validating {len(accession_list)} accessions")
+
+    try:
+        sleep(0.3)
+        # print(f"First of accession_list {accession_list[0]}")
+
+        term = entrez_query_generator(accession_list)
+        handle = Entrez.esearch(
+            db="Nucleotide", term=term, retmax=2 * len(accession_list), idtype="acc"
+        )
+
+        http_response = str(handle.read())
+
+        # Remove invalid ids
+        if "ErrorList" in http_response:
+            err_term = http_response.split("<ErrorList>")[1].split("</ErrorList>")[0]
+            if "PhraseNotFound" in err_term:
+                failed_acc = []
+                tmp_terms = err_term.split("</PhraseNotFound>")
+
+                for term in tmp_terms:
+                    if "[accn]" in term:
+                        failed_acc.append(
+                            term.split("<PhraseNotFound>")[1].split("[accn]")[0]
+                        )
+
+            for acc in failed_acc:
+                # logging.warning(f"GenBank accession {acc} is invalid")
+                accession_list.remove(acc)
+
+        return accession_list
+    except:
+        # print("Fail")
+        if len(accession_list) == 1:
+            logging.warning(f"GenBank accession {accession_list[0]} is invalid")
+            return []
+        else:
+            # Split the list in half
+            mid = len(accession_list) // 2
+            left_half = accession_list[:mid]
+            right_half = accession_list[mid:]
+
+            # Recursively validate each half
+            valid_left = validate_accessions_binary_search(left_half)
+            valid_right = validate_accessions_binary_search(right_half)
+
+            # Combine valid accessions from both halves
+            return valid_left + valid_right
 
 
 # filter accessions by regex
@@ -317,19 +383,26 @@ def filter_acc(acc_list, email) -> list:
     if len(return_acc_list) > 0:
         term = entrez_query_generator(return_acc_list)
 
-        handle = Entrez.esearch(
-            db="Nucleotide",
-            term=term,
-            retmax=2 * len(return_acc_list),
-            idtype="acc",
-        )
-        record = Entrez.read(handle)
+        # Assume that all handles are valid
+        # Using 2x return_acc_list for buffer size
+        try:
+            handle = Entrez.esearch(
+                db="Nucleotide",
+                term=term,
+                retmax=2 * len(return_acc_list),
+                idtype="acc",
+            )
 
-        # print(record)
-        # print(record["IdList"])
-        valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
+            record = Entrez.read(handle)
+            valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
 
-        # raise Exception
+        except:
+            logging.warning(
+                f"Not all accessions passed validation, running deeper validation"
+            )
+
+            valid_acc_list = validate_accessions_binary_search(return_acc_list)
+
         for acc in return_acc_list:
             if not (acc in valid_acc_list):
                 logging.warning(
