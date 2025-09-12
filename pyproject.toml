@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "genmine"
+version = "1.4.0"
+description = "GenBank data miner for fungal taxonomists"
+authors = [
+    {name = "Changwan Seo", email = "wan101010@snu.ac.kr"}
+]
+license = "GPL-3.0"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "biopython",
+    "pandas",
+    "openpyxl",
+    "xlrd",
+    "numpy",
+    "xmltodict",
+    "pytz",
+    "python-dateutil"
+]
+
+[project.urls]
+Homepage = "https://github.com/Changwanseo/GenMine"
+
+[project.scripts]
+GenMine = "GenMine.main:main"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["GenMine*"]
