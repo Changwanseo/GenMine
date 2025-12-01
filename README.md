@@ -3,12 +3,11 @@
  
  GenMine downloads GenBank nucleotide records
  GenMine filters downloaded data with frequently used genes in taxonomy.
-
-
-![image](https://github.com/Changwanseo/GenMine/assets/64393882/82acde63-4b7d-46f0-ae4e-f0c73d403819)
- 
-Citation: 
-Chang Wan Seo, Sung Hyun Kim, Young Woon Lim & Myung Soo Park (2022) Re-Identification on Korean Penicillium Sequences in GenBank Collected by Software GenMine, Mycobiology, DOI: 10.1080/12298093.2022.2116816
+<br></br>
+<img width="2008" height="473" alt="Figure 2  GenMine_workflow" src="https://github.com/user-attachments/assets/b5ddfa7d-c1d2-4563-b0e1-307a80668055" />
+<br></br>
+*Citation*: 
+Chang Wan Seo, Sung Hyun Kim, Young Woon Lim & Myung Soo Park (2022) Re-Identification on Korean *Penicillium* Sequences in GenBank Collected by Software GenMine, *Mycobiology*, DOI: 10.1080/12298093.2022.2116816
 
 https://www.tandfonline.com/doi/full/10.1080/12298093.2022.2116816
 
