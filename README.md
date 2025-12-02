@@ -1,4 +1,4 @@
-# GenMine [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17773573.svg)](https://doi.org/10.5281/zenodo.17773573)
+# GenMine [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17786123.svg)](https://doi.org/10.5281/zenodo.17786123)
  A GenBank data mining program for (mostly fungal) taxonomists
  
  GenMine downloads GenBank nucleotide records
