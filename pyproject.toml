@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "genmine"
-version = "1.4.0"
+version = "1.4.1"
 description = "GenBank data miner for fungal taxonomists"
 authors = [
     {name = "Changwan Seo", email = "wan101010@snu.ac.kr"}
