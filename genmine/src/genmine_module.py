@@ -268,13 +268,13 @@ def entrez_query_generator(acc_list):
             r"(([A-Z]{1}[0-9]{5})(\.[0-9]{1}){0,1})|(([A-Z]{2}[\_]{0,1}[0-9]{6}){1}([\.][0-9]){0,1})",
             acc.strip(),
         ):
-            acc_tmp_list.append(f"{acc.strip().split('.')[0]}" + "[accn]")
+            acc_tmp_list.append(f"{acc.strip().split('.')[0]}[Accession]")
         # For shotgun sequences
         elif re.fullmatch(
             r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})",
             acc.strip(),
         ):
-            acc_tmp_list.append(acc.strip().split(".")[0] + "[accn]")
+            acc_tmp_list.append(acc.strip().split(".")[0] + "[Accession]")
         else:
             logging.error(
                 f"[DEVELOPMENTAL ERROR] Bad accession {acc} entered entrez_query_generator. Please report your failed input to wan101010@snu.ac.kr"
@@ -320,9 +320,9 @@ def validate_accessions_binary_search(accession_list):
                 tmp_terms = err_term.split("</PhraseNotFound>")
 
                 for term in tmp_terms:
-                    if "[accn]" in term:
+                    if "[Accession]" in term:
                         failed_acc.append(
-                            term.split("<PhraseNotFound>")[1].split("[accn]")[0]
+                            term.split("<PhraseNotFound>")[1].split("[Accession]")[0]
                         )
 
             for acc in failed_acc:
@@ -350,9 +350,20 @@ def validate_accessions_binary_search(accession_list):
 
 
 # filter accessions by regex
-def filter_acc(acc_list, email) -> list:
+def filter_acc(acc_list, email, batch_size=100) -> list:
+    """
+    Filter and validate accessions with batching to prevent HTTP 500 errors.
+    
+    Args:
+        acc_list: List of accession numbers
+        email: Email for Entrez
+        batch_size: Number of accessions to process per batch (default: 100)
+    """
     # We can do this with pythonic expressions, but using iterative way for reporting
     return_acc_list = []
+    return_shotgun_list = []
+    
+    # First, categorize accessions
     for acc in acc_list:
         if acc.strip() == "":
             pass
@@ -361,56 +372,89 @@ def filter_acc(acc_list, email) -> list:
             r"(([A-Z]{1}[0-9]{5})(\.[0-9]{1}){0,1})|(([A-Z]{2}[\_]{0,1}[0-9]{6}){1}([\.][0-9]){0,1})",
             acc.strip(),
         ):
-            return_acc_list.append(
-                acc.strip().split(".")[0]
-            )  # Use most recent version of sequence
+            return_acc_list.append(acc.strip().split(".")[0])
         # For shotgun sequences
         elif re.fullmatch(
             r"(([A-Z]{4}[0-9]{8})(\.[0-9]{1}){0,1})|(([A-Z]{6}[0-9]{9,})(\.[0-9]{1}){0,1})",
             acc.strip(),
         ):
-            return_acc_list.append(acc.strip().split(".")[0])
+            return_shotgun_list.append(acc.strip().split(".")[0])
         else:
             logging.warning(
                 f"Accession {acc} does not seems to be valid accession. Passing"
             )
 
-    # Check if acc are valid by asking to GenBank
-    # to get number of result
-    # get accession_list term
     Entrez.email = email
+    valid_acc_list = []
 
     if len(return_acc_list) > 0:
-        term = entrez_query_generator(return_acc_list)
-
-        # Assume that all handles are valid
-        # Using 2x return_acc_list for buffer size
-        try:
-            handle = Entrez.esearch(
-                db="Nucleotide",
-                term=term,
-                retmax=2 * len(return_acc_list),
-                idtype="acc",
-            )
-
-            record = Entrez.read(handle)
-            valid_acc_list = [acc.split(".")[0] for acc in record["IdList"]]
-
-        except:
-            logging.warning(
-                f"Not all accessions passed validation, running deeper validation"
-            )
-
-            valid_acc_list = validate_accessions_binary_search(return_acc_list)
-
-        for acc in return_acc_list:
-            if not (acc in valid_acc_list):
-                logging.warning(
-                    f"GenBank accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet."
+        logging.info(f"Processing {len(return_acc_list)} normal accessions in batches of {batch_size}...")
+        
+        # Process normal accessions in batches
+        for i in range(0, len(return_acc_list), batch_size):
+            batch = return_acc_list[i:i + batch_size]
+            batch_num = (i // batch_size) + 1
+            total_batches = (len(return_acc_list) + batch_size - 1) // batch_size
+            
+            logging.info(f"Processing batch {batch_num}/{total_batches} ({len(batch)} accessions)")
+            
+            try:
+                query_term = entrez_query_generator(batch)
+                logging.info(f"Query length: {len(query_term)} characters")
+                
+                handle = Entrez.esearch(
+                    db="Nucleotide",
+                    term=query_term,
+                    retmax=2 * len(batch),
+                    idtype="acc",
                 )
-    else:
-        valid_acc_list = []
+                
+                record = Entrez.read(handle)
+                batch_results = [acc.split(".")[0] for acc in record["IdList"]]
+                valid_acc_list.extend(batch_results)
+                
+                logging.info(f"Batch {batch_num} completed: found {len(batch_results)} valid accessions")
+                
+                # Check for missing accessions in this batch
+                for acc in batch:
+                    if acc not in batch_results:
+                        logging.warning(f"GenBank accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet.")
+                
+                # Be respectful to NCBI servers - add delay between batches
+                sleep(0.5)
+                
+            except Exception as e:
+                logging.warning(f"Error processing batch {batch_num}: {type(e).__name__}: {e}")
+                # Continue with next batch instead of failing completely
+                continue
 
+    # Process shotgun accessions individually (as in original)
+    if len(return_shotgun_list) > 0:
+        logging.info(f"Processing {len(return_shotgun_list)} shotgun accessions individually...")
+        for i, acc in enumerate(return_shotgun_list):
+            try:
+                handle = Entrez.esearch(
+                    db="Nucleotide",
+                    term=acc,
+                    retmax=2,
+                    idtype="acc",
+                )
+                record = Entrez.read(handle)
+                shotgun_results = [_acc.split(".")[0] for _acc in record["IdList"]]
+                valid_acc_list.extend(shotgun_results)
+                
+                if not acc in shotgun_results:
+                    logging.warning(f"GenBank shotgun accession {acc} cannot be found in GenBank. Please check misspelling or if the accessions are not opened yet.")
+                
+                # Add small delay for shotgun processing too
+                if i % 10 == 0:  # Every 10 accessions
+                    sleep(0.1)
+                    
+            except Exception as e:
+                logging.warning(f"Error processing shotgun accession {acc}: {e}")
+                continue
+
+    logging.info(f"Total valid accessions found: {len(valid_acc_list)}")
     return valid_acc_list
 
 

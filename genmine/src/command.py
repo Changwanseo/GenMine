@@ -15,7 +15,11 @@ class CommandParser:
             "--email", "-e", help="Entrez Email, required", type=str, required=True
         )
         self.parser.add_argument(
-            "--genus", "-g", nargs="*", help="List of genus to find | File with genera in each line", type=str
+            "--taxa", "-t", "--genus", "-g",
+            dest="taxa",
+            nargs="*",
+            help="List of taxa to find | File with taxa in each line",
+            type=str
         )
         self.parser.add_argument(
             "--accession", "-c", nargs="*", help="List of accessions to get | File with accessions in each line", type=str

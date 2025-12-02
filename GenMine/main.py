@@ -78,10 +78,10 @@ def main():
 
     # Get genus inputs
     genus_list = []
-    if not (args.genus is None):
-        if type(args.genus) is str:
-            args.genus = [args.genus]
-        for acc in args.genus:
+    if not (args.taxa is None):
+        if type(args.taxa) is str:
+            args.taxa = [args.taxa]
+        for acc in args.taxa:
             if os.path.isfile(acc):
                 try:
                     with open(acc, "r") as f:

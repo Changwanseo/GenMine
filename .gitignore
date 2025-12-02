@@ -1,8 +1,11 @@
 ./tmp
 GenMine_env/
-GenMine.egg-info/
+*.egg-info/
 build/
 dist/
+__pycache__/
+*.pyc
+*.pyo
 *.xlsx
 *.json
 *.fasta
@@ -10,3 +13,4 @@ input.txt
 log.txt
 /test
 /test/*
+CLAUDE.md
