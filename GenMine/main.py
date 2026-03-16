@@ -1,4 +1,24 @@
 def main():
+    import sys
+    if "--check-network" in sys.argv:
+        import logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(message)s",
+        )
+        api_key = None
+        if "--api-key" in sys.argv:
+            idx = sys.argv.index("--api-key")
+            if idx + 1 < len(sys.argv):
+                api_key = sys.argv[idx + 1]
+        elif "-k" in sys.argv:
+            idx = sys.argv.index("-k")
+            if idx + 1 < len(sys.argv):
+                api_key = sys.argv[idx + 1]
+        from GenMine.src.network_check import run_network_check
+        run_network_check(api_key=api_key)
+        return
+
     from GenMine.src import genmine_module as Gen
     from GenMine.src.command import CommandParser
     from GenMine.src import logger
@@ -10,6 +30,7 @@ def main():
     import os
 
     args = CommandParser().get_args()
+
     # For time stamp
     date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
@@ -51,6 +72,13 @@ def main():
         email = None
         logging.error("Emails are mandatory for safe NCBI connection")
         raise Exception
+
+    # Set NCBI API key if provided
+    api_key = getattr(args, 'api_key', None)
+    if api_key:
+        from Bio import Entrez
+        Entrez.api_key = api_key
+        logging.info(f"NCBI API key set (rate limit: 10 requests/second)")
 
     # Get accession inputs
     accession_list = []
