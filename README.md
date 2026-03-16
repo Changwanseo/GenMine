@@ -90,8 +90,25 @@ GenMine -e wan101010@snu.ac.kr -c accessions.txt -o "2022-11-02-00-12-08"
 ```
 * Optional Parameters
 ```
---additional, -a : additional terms (ex. country name) to filter 
+--additional, -a : additional terms (ex. country name) to filter
 --max, -m : maximum length of the sequence to parse (default: 5000)
+--api-key, -k : NCBI API key for higher rate limits (10 req/s instead of 3)
+--check-network : run network diagnostics for NCBI connectivity and exit
+```
+
+### Using NCBI API key
+If your internet connection to NCBI is unstable (frequent timeouts or HTTP 500 errors), using an NCBI API key can help by increasing the rate limit from 3 to 10 requests per second.
+
+1. Sign up or log in at https://www.ncbi.nlm.nih.gov/account/
+2. Go to **Settings** and create an API key (see [NCBI API key guide](https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/))
+3. Use it with GenMine:
+```
+GenMine -e your@email.com -k YOUR_API_KEY -g Penicillium
+```
+
+You can also test your connection first:
+```
+GenMine --check-network --api-key YOUR_API_KEY
 ```
 
 ## Output explanations
