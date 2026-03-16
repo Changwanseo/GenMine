@@ -12,7 +12,7 @@ class CommandParser:
     def get_args(self) -> argparse.Namespace:
 
         self.parser.add_argument(
-            "--email", "-e", help="Entrez Email, required", type=str, required=True
+            "--email", "-e", help="Entrez Email, required", type=str
         )
         self.parser.add_argument(
             "--taxa", "-t", "--genus", "-g",
@@ -33,6 +33,18 @@ class CommandParser:
             "-m",
             help="Maximum length of sequence to search, in order to remove genomic sequences",
             type=int,
+        )
+        self.parser.add_argument(
+            "--api-key",
+            "-k",
+            help="NCBI API key for higher rate limits (10 req/s instead of 3)",
+            type=str,
+        )
+        self.parser.add_argument(
+            "--check-network",
+            action="store_true",
+            default=False,
+            help="Run network diagnostics for NCBI connectivity and exit",
         )
         
         '''
