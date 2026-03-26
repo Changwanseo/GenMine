@@ -19,11 +19,6 @@ https://www.tandfonline.com/doi/full/10.1080/12298093.2022.2116816
 pip install GenMine
 ```
 
-* conda 
-```
-conda install -c cwseo GenMine
-```
-
 
 
 ## Usage
